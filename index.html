@@ -3062,20 +3062,7 @@
                 z-index: 50;
             }
 
-            .video-nav-arrows .nav-arrow-btn {
-                width: 44px;
-                height: 44px;
-                background: rgba(255, 255, 255, 0.1);
-                border: 1.5px solid rgba(255, 255, 255, 0.3);
-                backdrop-filter: blur(4px);
-                -webkit-backdrop-filter: blur(4px);
-                margin-bottom: 12px;
-                opacity: 0.9;
-            }
-
-            .nav-arrow-btn:last-child {
-                margin-bottom: 0;
-            }
+            /* Keep desktop button surfaces here; phone glass is scoped to <=600px below. */
 
             .control-bar {
                 display: none !important;
@@ -3440,9 +3427,107 @@
                 transform: translateY(-50%) scale(0) !important;
             }
 
-            /* Nav arrows: scoot up slightly to avoid bottom bar overlap */
+            /* Give the mobile control column a consistent rhythm and safe edge inset. */
             .video-nav-arrows {
-                right: 8px !important;
+                right: max(12px, calc(env(safe-area-inset-right, 0px) + 8px)) !important;
+                align-items: center;
+            }
+
+            /* Mobile glass: directional edge light instead of a uniform outline. */
+            .video-nav-arrows .nav-arrow-btn {
+                position: relative;
+                isolation: isolate;
+                width: 48px;
+                height: 48px;
+                flex-shrink: 0;
+                margin-bottom: 10px;
+                border: 0;
+                background:
+                    radial-gradient(ellipse at 24% 0%, rgba(255, 243, 225, 0.20), transparent 62%),
+                    linear-gradient(155deg, rgba(35, 29, 25, 0.14), rgba(16, 13, 12, 0.32));
+                backdrop-filter: blur(14px) saturate(115%) brightness(0.94);
+                -webkit-backdrop-filter: blur(14px) saturate(115%) brightness(0.94);
+                box-shadow:
+                    inset 0 1px 1px rgba(255, 242, 223, 0.16),
+                    inset 0 -2px 3px rgba(0, 0, 0, 0.22),
+                    0 3px 6px rgba(0, 0, 0, 0.22),
+                    0 10px 22px rgba(0, 0, 0, 0.34);
+                opacity: 1;
+                -webkit-tap-highlight-color: transparent;
+                transition:
+                    transform 0.24s cubic-bezier(0.22, 1.3, 0.36, 1),
+                    box-shadow 0.18s ease,
+                    opacity 0.22s ease;
+            }
+
+            .video-nav-arrows .nav-arrow-btn::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                border-radius: inherit;
+                padding: 1px;
+                pointer-events: none;
+                background: linear-gradient(145deg,
+                    rgba(255, 245, 228, 0.72) 0%,
+                    rgba(255, 245, 228, 0.23) 28%,
+                    rgba(255, 255, 255, 0.045) 52%,
+                    rgba(255, 235, 207, 0.11) 74%,
+                    rgba(255, 235, 207, 0.33) 100%);
+                -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+                mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+                -webkit-mask-composite: xor;
+                mask-composite: exclude;
+            }
+
+            .video-nav-arrows .nav-arrow-btn svg {
+                filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+            }
+
+            .video-nav-arrows .nav-arrow-btn:not(.liked) svg {
+                stroke: rgba(255, 248, 238, 0.96);
+                stroke-width: 1.7;
+            }
+
+            .video-nav-arrows .like-count {
+                font-size: 11px;
+                font-weight: 600;
+                font-variant-numeric: tabular-nums;
+                letter-spacing: 0.015em;
+                color: rgba(255, 248, 238, 0.90);
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+            }
+
+            .video-nav-arrows .nav-arrow-btn.like-btn {
+                transition:
+                    height 0.3s ease,
+                    transform 0.24s cubic-bezier(0.22, 1.3, 0.36, 1),
+                    box-shadow 0.18s ease,
+                    opacity 0.22s ease;
+            }
+
+            .video-nav-arrows .nav-arrow-btn:last-child { margin-bottom: 0; }
+
+            .video-nav-arrows .nav-arrow-btn:active {
+                transform: translateY(1px) scale(0.94);
+                transition-duration: 0.09s;
+                background: linear-gradient(155deg, rgba(255, 239, 218, 0.07), rgba(18, 14, 12, 0.36));
+                box-shadow:
+                    inset 0 2px 6px rgba(0, 0, 0, 0.25),
+                    inset 0 1px 1px rgba(255, 242, 223, 0.08),
+                    0 2px 5px rgba(0, 0, 0, 0.2);
+            }
+
+            .video-nav-arrows .nav-arrow-btn:focus-visible {
+                outline: 2px solid rgba(255, 245, 228, 0.9);
+                outline-offset: 3px;
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                .video-nav-arrows .nav-arrow-btn,
+                .video-nav-arrows .nav-arrow-btn.like-btn {
+                    transition: opacity 0.15s ease;
+                }
+                .video-nav-arrows .nav-arrow-btn:active { transform: none; }
             }
 
             /* --- Info Panel (Instagram-style bottom sheet) --- */
