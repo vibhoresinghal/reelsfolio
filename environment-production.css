@@ -1,0 +1,128 @@
+/* Frozen olive-bough environment. Exact chosen settings: environment-default.json.
+   No scene picker, unused masks, secondary canopy, aperture extensions, or fade work. */
+:root[data-production-environment] {
+    --bg-light-opacity: .32;
+    --bg-light-rgb: 255 224 183;
+    --bg-light-softness: 12px;
+    --bg-light-x: 54%;
+    --bg-light-y: 14%;
+    --bg-light-spread-x: 86%;
+    --bg-light-spread-y: 142%;
+    --bg-light-blend: soft-light;
+    --bg-window-x: 0px;
+    --bg-window-y: 0px;
+    --bg-window-scale: 1;
+    --bg-window-rotation: -17deg;
+    --bg-window-skew: 1.5deg;
+    --bg-window-frame-width: 36px;
+    --bg-window-shadow-opacity: .55;
+    --bg-window-shadow-rgb: 38 29 18;
+    --bg-window-bar-x: 47%;
+    --bg-window-bar-y: 52%;
+    --bg-tree-scale: .59;
+    --bg-plant-width-scale: .99;
+    --bg-plant-height-scale: 1;
+    --bg-plant-softness: 55.5px;
+    --bg-foliage-rgb: 31 27 20;
+    --bg-foliage-shadow-opacity: .9;
+    --bg-left-leaf-opacity: 1;
+    --bg-window-left-leaf-x: -3%;
+    --bg-window-left-leaf-y: -14%;
+    --bg-left-leaf-rotation: 3deg;
+    --bg-light-motion-amount: 56px;
+    --bg-light-motion-rotation: 4.4deg;
+    --bg-light-motion-speed: 5s;
+    --bg-motion-easing: cubic-bezier(0.37, 0, 0.63, 1);
+}
+.bg-grid-cutting-mat {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+    mix-blend-mode: soft-light;
+}
+.bg-light-texture { position: absolute; pointer-events: none; }
+        :root[data-bg-light-pattern="window-foliage"] .bg-light-texture {
+            inset: 3% -8% 1% 12%;
+            overflow: hidden;
+            background:
+                linear-gradient(
+                    90deg,
+                    transparent calc(var(--bg-window-bar-x, 36%) - var(--bg-window-frame-width)),
+                    rgb(var(--bg-window-shadow-rgb, 38 29 18) / var(--bg-window-shadow-opacity)) calc(var(--bg-window-bar-x, 36%) - var(--bg-window-frame-width)),
+                    rgb(var(--bg-window-shadow-rgb, 38 29 18) / var(--bg-window-shadow-opacity)) calc(var(--bg-window-bar-x, 36%) + var(--bg-window-frame-width)),
+                    transparent calc(var(--bg-window-bar-x, 36%) + var(--bg-window-frame-width))
+                ),
+                linear-gradient(
+                    0deg,
+                    transparent calc(var(--bg-window-bar-y, 52%) - var(--bg-window-frame-width)),
+                    rgb(var(--bg-window-shadow-rgb, 38 29 18) / var(--bg-window-shadow-opacity)) calc(var(--bg-window-bar-y, 52%) - var(--bg-window-frame-width)),
+                    rgb(var(--bg-window-shadow-rgb, 38 29 18) / var(--bg-window-shadow-opacity)) calc(var(--bg-window-bar-y, 52%) + var(--bg-window-frame-width)),
+                    transparent calc(var(--bg-window-bar-y, 52%) + var(--bg-window-frame-width))
+                ),
+                rgb(var(--bg-light-rgb));
+            clip-path: polygon(4% 0, 92% 9%, 100% 93%, 0 100%);
+            transform:
+                translate3d(var(--bg-window-x), var(--bg-window-y), 0)
+                rotate(var(--bg-window-rotation))
+                skewY(var(--bg-window-skew, 1.5deg))
+                scale(var(--bg-window-scale))
+                scale(var(--bg-window-width-scale, 1), var(--bg-window-height-scale, 1));
+            transform-origin: 50% 50%;
+        }
+
+
+:root[data-production-environment] .bg-light-texture::before { content: none; }
+:root[data-production-environment] .bg-light-texture::after {
+    content: '';
+    position: absolute;
+    width: calc(97.222vw * var(--bg-tree-scale) * var(--bg-plant-width-scale));
+    height: calc(97.222vw * var(--bg-tree-scale) * var(--bg-plant-height-scale));
+    right: var(--bg-window-left-leaf-x);
+    bottom: var(--bg-window-left-leaf-y);
+    background: rgb(var(--bg-foliage-rgb) / var(--bg-foliage-shadow-opacity));
+    filter: blur(var(--bg-plant-softness));
+    opacity: var(--bg-left-leaf-opacity);
+    scale: -1 1;
+    rotate: calc(var(--bg-left-leaf-rotation) * -1);
+    transform-origin: 50% 50%;
+    mask: var(--bg-tree-mask, none) center / 100% 100% no-repeat;
+    mask-mode: alpha;
+    animation: window-plant-sway var(--bg-light-motion-speed) var(--bg-motion-easing) infinite alternate;
+    will-change: transform;
+}
+        @keyframes window-plant-sway {
+            0% {
+                transform: translate3d(calc(var(--bg-light-motion-amount) * -0.3), 0, 0)
+                    rotate(calc(var(--bg-light-motion-rotation) * -0.55));
+            }
+            52% {
+                transform: translate3d(calc(var(--bg-light-motion-amount) * 0.12), calc(var(--bg-light-motion-amount) * -0.16), 0)
+                    rotate(calc(var(--bg-light-motion-rotation) * 0.22));
+            }
+            100% {
+                transform: translate3d(calc(var(--bg-light-motion-amount) * 0.38), 0, 0)
+                    rotate(calc(var(--bg-light-motion-rotation) * 0.62));
+            }
+        }
+
+
+:root[data-production-environment] .bg-light-shader {
+    opacity: 0;
+    transition: opacity 240ms ease-out;
+}
+:root[data-production-environment][data-environment-ready] .bg-light-shader { opacity: var(--bg-light-opacity); }
+:root[data-production-environment]:not([data-environment-ready]) .bg-light-texture::after,
+:root[data-environment-paused] .bg-light-texture::after { animation-play-state: paused; }
+@media (min-width: 601px) {
+    :root[data-production-environment][data-environment-ready] { --bg-tree-mask: url("assets/environment/olive-bough.png"); }
+}
+@media (max-width: 600px) {
+    :root[data-production-environment] .bg-light-texture::after { content: none; will-change: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+    :root[data-production-environment] .bg-light-texture::after { animation: none; will-change: auto; }
+    :root[data-production-environment] .bg-light-shader { transition: none; }
+}

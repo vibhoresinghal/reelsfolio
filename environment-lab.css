@@ -1,0 +1,298 @@
+/* Retired environment study styles. Not loaded by the production page. */
+        .bg-light-texture {
+            position: absolute;
+            inset: -12%;
+            pointer-events: none;
+            will-change: transform;
+        }
+
+        :root[data-bg-light-pattern="blinds"] .bg-light-texture {
+            background: repeating-linear-gradient(
+                var(--bg-light-angle),
+                rgb(var(--bg-light-rgb)) 0,
+                rgb(var(--bg-light-rgb)) var(--bg-light-slat-width),
+                transparent var(--bg-light-slat-width),
+                transparent calc(var(--bg-light-slat-width) + var(--bg-light-gap))
+            );
+        }
+
+        :root[data-bg-light-pattern="foliage"] .bg-light-texture {
+            background-image:
+                radial-gradient(ellipse 20% 8% at 14% 19%, rgb(var(--bg-light-rgb)) 0 58%, transparent 73%),
+                radial-gradient(ellipse 9% 23% at 61% 14%, rgb(var(--bg-light-rgb)) 0 56%, transparent 72%),
+                radial-gradient(ellipse 24% 10% at 83% 67%, rgb(var(--bg-light-rgb)) 0 54%, transparent 71%),
+                radial-gradient(ellipse 10% 19% at 32% 82%, rgb(var(--bg-light-rgb)) 0 57%, transparent 74%),
+                radial-gradient(ellipse 15% 6% at 72% 39%, rgb(var(--bg-light-rgb) / var(--bg-light-foliage-density)) 0 52%, transparent 72%),
+                radial-gradient(ellipse 7% 17% at 43% 48%, rgb(var(--bg-light-rgb) / var(--bg-light-foliage-density)) 0 54%, transparent 73%),
+                radial-gradient(ellipse 18% 7% at 7% 72%, rgb(var(--bg-light-rgb) / var(--bg-light-foliage-density)) 0 53%, transparent 71%),
+                radial-gradient(ellipse 6% 14% at 92% 22%, rgb(var(--bg-light-rgb) / var(--bg-light-foliage-density)) 0 55%, transparent 74%);
+            background-repeat: repeat;
+            background-size:
+                var(--bg-light-foliage-scale) var(--bg-light-foliage-scale),
+                calc(var(--bg-light-foliage-scale) * 1.13) calc(var(--bg-light-foliage-scale) * 0.91),
+                calc(var(--bg-light-foliage-scale) * 0.87) calc(var(--bg-light-foliage-scale) * 1.19),
+                calc(var(--bg-light-foliage-scale) * 1.28) calc(var(--bg-light-foliage-scale) * 1.06),
+                calc(var(--bg-light-foliage-scale) * 0.72) calc(var(--bg-light-foliage-scale) * 0.84),
+                calc(var(--bg-light-foliage-scale) * 0.94) calc(var(--bg-light-foliage-scale) * 0.68),
+                calc(var(--bg-light-foliage-scale) * 0.63) calc(var(--bg-light-foliage-scale) * 1.08),
+                calc(var(--bg-light-foliage-scale) * 1.07) calc(var(--bg-light-foliage-scale) * 0.76);
+            background-position:
+                0 0, 37px -29px, -51px 41px, 73px 18px,
+                -24px 62px, 49px 87px, 91px -43px, -68px -72px;
+        }
+
+        :root[data-bg-light-pattern="foliage"][data-bg-foliage-style="fine"] .bg-light-texture {
+            background-image:
+                radial-gradient(ellipse 11% 4% at 8% 13%, rgb(var(--bg-light-rgb)) 0 54%, transparent 72%),
+                radial-gradient(ellipse 4% 12% at 28% 38%, rgb(var(--bg-light-rgb)) 0 53%, transparent 71%),
+                radial-gradient(ellipse 13% 4% at 56% 9%, rgb(var(--bg-light-rgb)) 0 56%, transparent 73%),
+                radial-gradient(ellipse 5% 14% at 79% 44%, rgb(var(--bg-light-rgb)) 0 52%, transparent 70%),
+                radial-gradient(ellipse 12% 5% at 91% 82%, rgb(var(--bg-light-rgb)) 0 54%, transparent 72%),
+                radial-gradient(ellipse 4% 10% at 44% 74%, rgb(var(--bg-light-rgb) / var(--bg-light-foliage-density)) 0 55%, transparent 73%),
+                radial-gradient(ellipse 10% 4% at 17% 88%, rgb(var(--bg-light-rgb) / var(--bg-light-foliage-density)) 0 53%, transparent 71%),
+                radial-gradient(ellipse 4% 11% at 68% 62%, rgb(var(--bg-light-rgb) / var(--bg-light-foliage-density)) 0 54%, transparent 72%);
+        }
+
+        :root[data-bg-light-pattern="foliage"][data-bg-foliage-style="broad"] .bg-light-texture {
+            background-image:
+                radial-gradient(ellipse 30% 12% at 9% 26%, rgb(var(--bg-light-rgb)) 0 59%, transparent 74%),
+                radial-gradient(ellipse 14% 34% at 49% 12%, rgb(var(--bg-light-rgb)) 0 57%, transparent 72%),
+                radial-gradient(ellipse 36% 14% at 87% 55%, rgb(var(--bg-light-rgb)) 0 58%, transparent 73%),
+                radial-gradient(ellipse 15% 30% at 29% 91%, rgb(var(--bg-light-rgb)) 0 56%, transparent 72%),
+                radial-gradient(ellipse 27% 11% at 64% 72%, rgb(var(--bg-light-rgb) / var(--bg-light-foliage-density)) 0 57%, transparent 74%);
+        }
+
+        :root[data-bg-light-pattern="foliage"][data-bg-foliage-style="palm"] .bg-light-texture {
+            background-image:
+                repeating-conic-gradient(
+                    from 204deg at 8% 12%,
+                    transparent 0deg 5deg,
+                    rgb(var(--bg-light-rgb)) 6deg 10deg,
+                    transparent 11deg 17deg
+                ),
+                repeating-conic-gradient(
+                    from 24deg at 91% 72%,
+                    transparent 0deg 7deg,
+                    rgb(var(--bg-light-rgb) / var(--bg-light-foliage-density)) 8deg 13deg,
+                    transparent 14deg 21deg
+                );
+            background-size:
+                calc(var(--bg-light-foliage-scale) * 1.4) calc(var(--bg-light-foliage-scale) * 1.4),
+                calc(var(--bg-light-foliage-scale) * 1.8) calc(var(--bg-light-foliage-scale) * 1.8);
+            background-position: 0 0, 43px -71px;
+        }
+
+        :root[data-bg-light-pattern="window-foliage"] .bg-light-texture {
+            inset: 3% -8% 1% 12%;
+            overflow: hidden;
+            background:
+                linear-gradient(
+                    90deg,
+                    transparent calc(var(--bg-window-bar-x, 36%) - var(--bg-window-frame-width)),
+                    rgb(var(--bg-window-shadow-rgb, 38 29 18) / var(--bg-window-shadow-opacity)) calc(var(--bg-window-bar-x, 36%) - var(--bg-window-frame-width)),
+                    rgb(var(--bg-window-shadow-rgb, 38 29 18) / var(--bg-window-shadow-opacity)) calc(var(--bg-window-bar-x, 36%) + var(--bg-window-frame-width)),
+                    transparent calc(var(--bg-window-bar-x, 36%) + var(--bg-window-frame-width))
+                ),
+                linear-gradient(
+                    0deg,
+                    transparent calc(var(--bg-window-bar-y, 52%) - var(--bg-window-frame-width)),
+                    rgb(var(--bg-window-shadow-rgb, 38 29 18) / var(--bg-window-shadow-opacity)) calc(var(--bg-window-bar-y, 52%) - var(--bg-window-frame-width)),
+                    rgb(var(--bg-window-shadow-rgb, 38 29 18) / var(--bg-window-shadow-opacity)) calc(var(--bg-window-bar-y, 52%) + var(--bg-window-frame-width)),
+                    transparent calc(var(--bg-window-bar-y, 52%) + var(--bg-window-frame-width))
+                ),
+                rgb(var(--bg-light-rgb));
+            clip-path: polygon(4% 0, 92% 9%, 100% 93%, 0 100%);
+            transform:
+                translate3d(var(--bg-window-x), var(--bg-window-y), 0)
+                rotate(var(--bg-window-rotation))
+                skewY(var(--bg-window-skew, 1.5deg))
+                scale(var(--bg-window-scale))
+                scale(var(--bg-window-width-scale, 1), var(--bg-window-height-scale, 1));
+            transform-origin: 50% 50%;
+        }
+
+        :root[data-bg-light-pattern="window-foliage"] .bg-light-texture::before,
+        :root[data-bg-light-pattern="window-foliage"] .bg-light-texture::after {
+            content: '';
+            position: absolute;
+            width: calc(var(--bg-light-foliage-scale) * 1.4 * var(--bg-plant-width-scale, 1));
+            height: calc(var(--bg-light-foliage-scale) * 1.25 * var(--bg-plant-height-scale, 1));
+            background-image:
+                radial-gradient(ellipse 17% 7% at 20% 31%, rgb(var(--bg-foliage-rgb, 31 27 20) / var(--bg-foliage-shadow-opacity, var(--bg-window-shadow-opacity))) 0 62%, transparent 72%),
+                radial-gradient(ellipse 8% 20% at 34% 19%, rgb(var(--bg-foliage-rgb, 31 27 20) / var(--bg-foliage-shadow-opacity, var(--bg-window-shadow-opacity))) 0 61%, transparent 72%),
+                radial-gradient(ellipse 19% 8% at 47% 34%, rgb(var(--bg-foliage-rgb, 31 27 20) / var(--bg-foliage-shadow-opacity, var(--bg-window-shadow-opacity))) 0 63%, transparent 73%),
+                radial-gradient(ellipse 8% 18% at 62% 18%, rgb(var(--bg-foliage-rgb, 31 27 20) / var(--bg-foliage-shadow-opacity, var(--bg-window-shadow-opacity))) 0 60%, transparent 72%),
+                radial-gradient(ellipse 20% 8% at 76% 42%, rgb(var(--bg-foliage-rgb, 31 27 20) / var(--bg-foliage-shadow-opacity, var(--bg-window-shadow-opacity))) 0 62%, transparent 73%),
+                radial-gradient(ellipse 9% 19% at 83% 24%, rgb(var(--bg-foliage-rgb, 31 27 20) / var(--bg-foliage-shadow-opacity, var(--bg-window-shadow-opacity))) 0 60%, transparent 72%),
+                radial-gradient(ellipse 17% 7% at 28% 56%, rgb(var(--bg-foliage-rgb, 31 27 20) / var(--bg-light-foliage-density)) 0 61%, transparent 73%),
+                radial-gradient(ellipse 7% 18% at 51% 53%, rgb(var(--bg-foliage-rgb, 31 27 20) / var(--bg-light-foliage-density)) 0 60%, transparent 72%),
+                radial-gradient(ellipse 18% 7% at 69% 64%, rgb(var(--bg-foliage-rgb, 31 27 20) / var(--bg-light-foliage-density)) 0 62%, transparent 73%),
+                linear-gradient(68deg, transparent 47.8%, rgb(var(--bg-stem-rgb, 35 29 20) / var(--bg-window-shadow-opacity)) 48.5% 49.4%, transparent 50.1%),
+                linear-gradient(79deg, transparent 45.8%, rgb(var(--bg-stem-rgb, 35 29 20) / var(--bg-window-shadow-opacity)) 46.5% 47.2%, transparent 47.9%);
+            filter: blur(var(--bg-plant-softness, 0px));
+            background-repeat: no-repeat;
+            transform-origin: 14% 100%;
+            will-change: transform;
+        }
+
+        :root[data-bg-light-pattern="window-foliage"] .bg-light-texture::after {
+            left: var(--bg-window-left-leaf-x);
+            bottom: var(--bg-window-left-leaf-y);
+            opacity: var(--bg-left-leaf-opacity, 1);
+            rotate: var(--bg-left-leaf-rotation, 0deg);
+        }
+
+        :root[data-bg-light-pattern="window-foliage"] .bg-light-texture::before {
+            left: var(--bg-window-right-leaf-x);
+            bottom: var(--bg-window-right-leaf-y);
+            opacity: var(--bg-right-leaf-opacity, 0.9);
+            rotate: var(--bg-right-leaf-rotation, 0deg);
+            transform-origin: 86% 100%;
+        }
+
+        :root[data-bg-light-pattern="foliage"][data-bg-foliage-motion] .bg-light-texture {
+            animation: foliage-sway var(--bg-light-motion-speed) cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
+        }
+
+        :root[data-bg-light-pattern="window-foliage"][data-bg-foliage-motion] .bg-light-texture::after {
+            animation: window-plant-sway var(--bg-light-motion-speed) var(--bg-motion-easing, cubic-bezier(0.45, 0.05, 0.55, 0.95)) infinite alternate;
+            animation-delay: var(--bg-left-motion-delay, 0s);
+        }
+
+        :root[data-bg-light-pattern="window-foliage"][data-bg-foliage-motion] .bg-light-texture::before {
+            animation: window-plant-sway-right calc(var(--bg-light-motion-speed) * var(--bg-right-motion-ratio, 1.17)) var(--bg-motion-easing, cubic-bezier(0.45, 0.05, 0.55, 0.95)) infinite alternate-reverse;
+            animation-delay: var(--bg-right-motion-delay, 0s);
+        }
+
+        /* Lab-only tree studies: reuse the window projection and its two moving
+           planes, replacing only the original radial leaves with alpha masks.
+           No asset is requested until a tree scene is chosen in the controller. */
+        :root[data-bg-light-pattern="window-foliage"][data-environment-tree] .bg-light-texture::before,
+        :root[data-bg-light-pattern="window-foliage"][data-environment-tree] .bg-light-texture::after {
+            width: calc(97.222vw * var(--bg-tree-scale) * var(--bg-plant-width-scale, 1));
+            height: calc(97.222vw * var(--bg-tree-scale) * var(--bg-plant-height-scale, 1));
+            background: rgb(var(--bg-foliage-rgb) / var(--bg-foliage-shadow-opacity));
+            -webkit-mask: var(--bg-tree-mask) center / 100% 100% no-repeat;
+            mask: var(--bg-tree-mask) center / 100% 100% no-repeat;
+            mask-mode: alpha;
+            transform-origin: 8% 80%;
+        }
+
+        :root[data-bg-light-pattern="window-foliage"][data-environment-tree] .bg-light-texture::before {
+            background: rgb(var(--bg-stem-rgb) / var(--bg-light-foliage-density));
+            filter: blur(calc(var(--bg-plant-softness, 0px) + 5px));
+            transform: scaleX(-1);
+            transform-origin: 92% 80%;
+        }
+
+        /* Mirror only the shadow planes, including their placement. The
+           window/light projection stays put; sway still runs independently. */
+        :root[data-bg-light-pattern="window-foliage"][data-environment-foliage-flipped] .bg-light-texture::after,
+        :root[data-bg-light-pattern="window-foliage"][data-environment-foliage-flipped] .bg-light-texture::before {
+            left: auto;
+            scale: var(--bg-foliage-flip, -1) 1;
+            transform-origin: 50% 50%;
+        }
+
+        :root[data-bg-light-pattern="window-foliage"][data-environment-foliage-flipped] .bg-light-texture::after {
+            right: var(--bg-window-left-leaf-x);
+            rotate: calc(var(--bg-left-leaf-rotation, 0deg) * -1);
+        }
+
+        :root[data-bg-light-pattern="window-foliage"][data-environment-foliage-flipped] .bg-light-texture::before {
+            right: var(--bg-window-right-leaf-x);
+            rotate: calc(var(--bg-right-leaf-rotation, 0deg) * -1);
+        }
+
+        .bg-window-light-plane { display: none; }
+
+        /* Grow the aperture, not its coordinate system. Only its bottom-left
+           vertex moves; the original foliage boxes and frame thickness do not. */
+        :root[data-bg-light-pattern="window-foliage"][data-environment-aperture] .bg-light-texture {
+            overflow: visible;
+            background: transparent;
+            clip-path: polygon(4% 0, 92% 9%, 100% 93%, calc(0% - var(--bg-window-bottom-left-reach)) calc(100% + var(--bg-window-bottom-left-reach)));
+            /* Fade inward from the entire slanted left edge, not diagonally
+               out of the bottom-left corner. The mask follows any extension. */
+            mask-image: var(--bg-window-left-fade-mask, linear-gradient(to right, transparent 0%, #000 var(--bg-window-left-fade)));
+            mask-size: calc(100% + var(--bg-window-bottom-left-reach)) calc(100% + var(--bg-window-bottom-left-reach));
+            mask-position: right top;
+            mask-repeat: no-repeat;
+            mask-clip: no-clip;
+        }
+
+        :root[data-bg-light-pattern="window-foliage"][data-environment-aperture] .bg-window-light-plane {
+            display: block;
+            position: absolute;
+            inset: 0 0 calc(-1 * var(--bg-window-bottom-left-reach)) calc(-1 * var(--bg-window-bottom-left-reach));
+            z-index: -1;
+            pointer-events: none;
+            filter: blur(var(--bg-window-softness, 0px));
+            background:
+                linear-gradient(90deg,
+                    transparent calc(var(--bg-window-extended-bar-x) - var(--bg-window-frame-width)),
+                    rgb(var(--bg-window-shadow-rgb) / var(--bg-window-shadow-opacity)) calc(var(--bg-window-extended-bar-x) - var(--bg-window-frame-width)),
+                    rgb(var(--bg-window-shadow-rgb) / var(--bg-window-shadow-opacity)) calc(var(--bg-window-extended-bar-x) + var(--bg-window-frame-width)),
+                    transparent calc(var(--bg-window-extended-bar-x) + var(--bg-window-frame-width))),
+                linear-gradient(0deg,
+                    transparent calc(var(--bg-window-extended-bar-y) - var(--bg-window-frame-width)),
+                    rgb(var(--bg-window-shadow-rgb) / var(--bg-window-shadow-opacity)) calc(var(--bg-window-extended-bar-y) - var(--bg-window-frame-width)),
+                    rgb(var(--bg-window-shadow-rgb) / var(--bg-window-shadow-opacity)) calc(var(--bg-window-extended-bar-y) + var(--bg-window-frame-width)),
+                    transparent calc(var(--bg-window-extended-bar-y) + var(--bg-window-frame-width))),
+                rgb(var(--bg-light-rgb));
+        }
+
+        @keyframes foliage-sway {
+            0% {
+                transform: translate3d(calc(var(--bg-light-motion-amount) * -0.45), calc(var(--bg-light-motion-amount) * 0.12), 0)
+                    rotate(calc(var(--bg-light-motion-rotation) * -1));
+            }
+            48% {
+                transform: translate3d(calc(var(--bg-light-motion-amount) * 0.16), calc(var(--bg-light-motion-amount) * -0.3), 0)
+                    rotate(calc(var(--bg-light-motion-rotation) * 0.28));
+            }
+            100% {
+                transform: translate3d(calc(var(--bg-light-motion-amount) * 0.5), calc(var(--bg-light-motion-amount) * 0.18), 0)
+                    rotate(var(--bg-light-motion-rotation));
+            }
+        }
+
+        @keyframes window-plant-sway {
+            0% {
+                transform: translate3d(calc(var(--bg-light-motion-amount) * -0.3), 0, 0)
+                    rotate(calc(var(--bg-light-motion-rotation) * -0.55));
+            }
+            52% {
+                transform: translate3d(calc(var(--bg-light-motion-amount) * 0.12), calc(var(--bg-light-motion-amount) * -0.16), 0)
+                    rotate(calc(var(--bg-light-motion-rotation) * 0.22));
+            }
+            100% {
+                transform: translate3d(calc(var(--bg-light-motion-amount) * 0.38), 0, 0)
+                    rotate(calc(var(--bg-light-motion-rotation) * 0.62));
+            }
+        }
+
+        @keyframes window-plant-sway-right {
+            0% {
+                transform: translate3d(calc(var(--bg-light-motion-amount) * 0.26), 0, 0)
+                    rotate(calc(var(--bg-light-motion-rotation) * 0.46)) scaleX(-1);
+            }
+            52% {
+                transform: translate3d(calc(var(--bg-light-motion-amount) * -0.1), calc(var(--bg-light-motion-amount) * -0.12), 0)
+                    rotate(calc(var(--bg-light-motion-rotation) * -0.18)) scaleX(-1);
+            }
+            100% {
+                transform: translate3d(calc(var(--bg-light-motion-amount) * -0.34), 0, 0)
+                    rotate(calc(var(--bg-light-motion-rotation) * -0.54)) scaleX(-1);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            :root[data-bg-foliage-motion] .bg-light-texture {
+                animation: none !important;
+            }
+            :root[data-bg-foliage-motion] .bg-light-texture::before,
+            :root[data-bg-foliage-motion] .bg-light-texture::after {
+                animation: none !important;
+            }
+        }

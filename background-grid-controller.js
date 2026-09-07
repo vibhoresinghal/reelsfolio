@@ -427,7 +427,8 @@
                     </div>
                 </div>
                 <div class="subsection">
-                    <span class="subsection-title">Sunlight shader</span>
+                    <span class="subsection-title">Sunlight shader · Original</span>
+                    <p data-environment-notice hidden style="margin:0;font-size:11px;color:#b7efc5">Choose original foliage or tree shadows in Environment. Shared lighting and placement controls stay in sync between both panels.</p>
                     <label class="toggle">
                         <span class="label">Enable light</span>
                         <input type="checkbox" checked data-property="lightEnabled">
@@ -601,6 +602,9 @@
     const foliageControls = [...shadow.querySelectorAll('[data-foliage-control]')];
     const foliageStyleControls = [...shadow.querySelectorAll('[data-foliage-style-control]')];
     const windowControls = [...shadow.querySelectorAll('[data-window-control]')];
+    window.addEventListener('reelfolio:environment-mode', event => {
+        shadow.querySelector('[data-environment-notice]').hidden = !event.detail.enabled;
+    });
 
     function hexToRgbChannels(hex) {
         const value = hex.replace('#', '');
@@ -642,14 +646,23 @@
         output.textContent = `${state[property]}${suffix}`;
     }
 
+    let cuttingMatSignature = '';
     function renderCuttingMat() {
         if (!bgLayer || state.pattern !== 'cutting-mat') {
             cuttingMatSvg.replaceChildren();
+            cuttingMatSignature = '';
             return;
         }
 
         const width = window.innerWidth;
         const height = window.innerHeight;
+        const signature = JSON.stringify([width, height, ...[
+            'color', 'spacing', 'thickness', 'opacity', 'majorEvery', 'majorOpacity',
+            'edgeTicks', 'numericGuides', 'radiusGuides', 'angleGuides', 'angleStep'
+        ].map(key => state[key])]);
+        // Lighting controls should not rebuild hundreds of unrelated grid nodes.
+        if (signature === cuttingMatSignature) return;
+        cuttingMatSignature = signature;
         const margin = 24;
         const spacing = Math.max(8, state.spacing);
         const majorEvery = Math.max(2, state.majorEvery);
@@ -754,7 +767,7 @@
         `;
     }
 
-    function applyState() {
+    function applyState(source = 'background') {
         ROOT.dataset.bgGridPattern = state.pattern;
         ROOT.dataset.bgLightPattern = state.lightPattern;
         ROOT.dataset.bgFoliageStyle = state.foliageStyle;
@@ -806,13 +819,20 @@
         foliageStyleControls.forEach(control => { control.hidden = state.lightPattern !== 'foliage'; });
         windowControls.forEach(control => { control.hidden = state.lightPattern !== 'window-foliage'; });
         renderCuttingMat();
+        window.dispatchEvent(new CustomEvent('reelfolio:background-settings', { detail: { source, state: { ...state } } }));
     }
 
     function syncInputs() {
         inputs.forEach(input => {
             const property = input.dataset.property;
             if (input.type === 'checkbox') input.checked = state[property];
-            else input.value = String(state[property]);
+            else {
+                if (input.type === 'range') {
+                    input.min = String(Math.min(Number(input.min), Number(state[property])));
+                    input.max = String(Math.max(Number(input.max), Number(state[property])));
+                }
+                input.value = String(state[property]);
+            }
             updateOutput(property);
         });
     }
@@ -852,6 +872,16 @@
         }
     });
 
+    window.ReelFolioBackground = {
+        getState: () => ({ ...state }),
+        applySettings(values, source = 'environment') {
+            for (const key of Object.keys(defaults)) {
+                if (Object.hasOwn(values, key)) state[key] = values[key];
+            }
+            syncInputs();
+            applyState(source);
+        }
+    };
     syncInputs();
     applyState();
     let resizeTimer = null;
