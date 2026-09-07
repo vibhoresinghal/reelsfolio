@@ -3631,7 +3631,6 @@
                 pointer-events: auto !important;
             }
 
-            .video-nav-arrows .fullscreen-btn,
             .video-nav-arrows .info-panel-btn {
                 display: none !important;
             }
@@ -4659,7 +4658,7 @@
                             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
                             updateMobileNav('home');
                             if (!suppressObserverPlayback && !isWarping && hasStartedExperience) debouncedPlayVideo('landing-video');
-                            if (document.fullscreenElement && !suppressObserverPlayback) fullscreenVideoId = 'landing-video';
+                            if (getFullscreenElement() && !suppressObserverPlayback) fullscreenVideoId = 'landing-video';
                             if (!isWarping) updateLikeButtonForCurrentVideo('landing', false, true);
                         } else if (isVideo) {
                             if (controlBar) controlBar.classList.toggle('hidden', !hasStartedExperience);
@@ -4675,7 +4674,7 @@
 
                             const videoId = entry.target.getAttribute('data-video-id');
                             if (!suppressObserverPlayback && !isWarping && hasStartedExperience) debouncedPlayVideo(videoId);
-                            if (document.fullscreenElement && !suppressObserverPlayback && videoId) fullscreenVideoId = videoId;
+                            if (getFullscreenElement() && !suppressObserverPlayback && videoId) fullscreenVideoId = videoId;
                             if (!isWarping) updateLikeButtonForCurrentVideo(videoId, false, true);
                         }
                     } else {
@@ -5135,22 +5134,45 @@
             }, 400);
         }
 
+        function getFullscreenElement() {
+            return document.fullscreenElement || document.webkitFullscreenElement || null;
+        }
+
+        function getPageFullscreenRequest() {
+            return document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
+        }
+
+        function getPageFullscreenExit() {
+            return document.exitFullscreen || document.webkitExitFullscreen;
+        }
+
         async function toggleDesktopFullscreen() {
-            if (window.innerWidth <= 600 || !document.fullscreenEnabled) return;
+            const activeVideo = getActiveVideoForFullscreen();
+            if (!activeVideo) return;
 
             clearTimeout(playVideoDebounceTimer);
             try {
-                if (document.fullscreenElement) {
+                if (getFullscreenElement()) {
                     suppressObserverPlayback = true;
-                    await document.exitFullscreen();
+                    const exitFullscreen = getPageFullscreenExit();
+                    if (exitFullscreen) await exitFullscreen.call(document);
                 } else {
-                    const activeVideo = getActiveVideoForFullscreen();
-                    if (!activeVideo) return;
                     suppressObserverPlayback = true;
                     fullscreenVideoId = activeVideo.id;
-                    document.body.classList.add('desktop-fullscreen-mode');
                     startPlaybackForFullscreen(fullscreenVideoId);
-                    await document.documentElement.requestFullscreen();
+
+                    const requestFullscreen = getPageFullscreenRequest();
+                    if (requestFullscreen) {
+                        document.body.classList.add('desktop-fullscreen-mode');
+                        await requestFullscreen.call(document.documentElement);
+                    } else if (typeof activeVideo.webkitEnterFullscreen === 'function') {
+                        // Older iPhones support native video fullscreen but not page fullscreen.
+                        activeVideo.webkitEnterFullscreen();
+                        suppressObserverPlayback = false;
+                    } else {
+                        fullscreenVideoId = null;
+                        suppressObserverPlayback = false;
+                    }
                 }
             } catch (error) {
                 document.body.classList.remove('desktop-fullscreen-mode');
@@ -5161,7 +5183,7 @@
         }
 
         function syncDesktopFullscreenMode() {
-            const isFullscreen = document.fullscreenElement === document.documentElement;
+            const isFullscreen = getFullscreenElement() === document.documentElement;
             document.body.classList.toggle('desktop-fullscreen-mode', isFullscreen);
             suppressObserverPlayback = true;
 
@@ -5188,8 +5210,12 @@
         }
 
         document.addEventListener('fullscreenchange', syncDesktopFullscreenMode);
+        document.addEventListener('webkitfullscreenchange', syncDesktopFullscreenMode);
 
-        if (!document.fullscreenEnabled) {
+        const supportsPageFullscreen = !!getPageFullscreenRequest();
+        const supportsNativeVideoFullscreen = Array.from(document.querySelectorAll('video'))
+            .some(video => typeof video.webkitEnterFullscreen === 'function');
+        if (!supportsPageFullscreen && !supportsNativeVideoFullscreen) {
             document.getElementById('fullscreenBtn')?.classList.add('hidden');
         }
 
@@ -5204,11 +5230,11 @@
 
         function scheduleFullscreenCursorHide() {
             showFullscreenCursor();
-            if (document.fullscreenElement !== document.documentElement || document.hidden) return;
+            if (getFullscreenElement() !== document.documentElement || document.hidden) return;
 
             fullscreenCursorTimer = setTimeout(() => {
                 fullscreenCursorTimer = null;
-                if (document.fullscreenElement === document.documentElement && !document.hidden) {
+                if (getFullscreenElement() === document.documentElement && !document.hidden) {
                     document.body.classList.add('fullscreen-cursor-hidden');
                 }
             }, FULLSCREEN_CURSOR_IDLE_DELAY);
@@ -5230,7 +5256,7 @@
         let lastImmersivePointerY = null;
 
         function canEnterDesktopImmersiveMode() {
-            if (window.innerWidth <= 600 || document.hidden || document.fullscreenElement) return false;
+            if (window.innerWidth <= 600 || document.hidden || getFullscreenElement()) return false;
             if (isWarping || isScrolling) return false;
             if (document.querySelector('.grid-overlay.visible')) return false;
 
@@ -5301,7 +5327,7 @@
             else scheduleDesktopImmersiveMode();
         });
         document.addEventListener('fullscreenchange', () => {
-            if (document.fullscreenElement) cancelDesktopImmersiveMode();
+            if (getFullscreenElement()) cancelDesktopImmersiveMode();
             else scheduleDesktopImmersiveMode();
         });
         window.addEventListener('resize', noteDesktopInteraction, { passive: true });
