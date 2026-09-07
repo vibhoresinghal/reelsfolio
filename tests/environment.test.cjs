@@ -6,6 +6,7 @@ const vm = require('node:vm');
 const api = require('../environment-shader.js');
 // The exploratory renderer is retained offline, not shipped on the normal page.
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8')
+    + fs.readFileSync(path.join(__dirname, '..', 'styles.css'), 'utf8')
     + fs.readFileSync(path.join(__dirname, '..', 'environment-lab.css'), 'utf8');
 const backgroundSource = fs.readFileSync(path.join(__dirname, '..', 'background-grid-controller.js'), 'utf8');
 const declaration = backgroundSource.slice(backgroundSource.indexOf('    const defaults ='), backgroundSource.indexOf('    const state ='));

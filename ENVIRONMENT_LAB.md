@@ -5,6 +5,12 @@ in `environment-default.json`. `environment-production.css` contains the frozen
 appearance; `background-runtime.js` renders the cutting-mat grid and prepares the
 single visible foliage texture. The JSON is a source record, not a runtime fetch.
 
+Production uses `olive-bough-mask.webp` (248,944 bytes) instead of the original
+1,149,926-byte PNG. It keeps all 1254 x 1254 alpha samples exactly, with constant
+RGB because the CSS uses alpha masking. Lossless WebP reduces the asset by 78.4%
+without changing the silhouette, opacity, blur, or motion. The PNG remains the
+source for the archived study.
+
 The live controller, scene picker, alternate textures, and invisible far canopy
 are no longer loaded. Mobile does not request the foliage texture. Desktop waits
 for image decoding before revealing the environment together; hidden tabs and

@@ -6,7 +6,7 @@ const vm = require('node:vm');
 const read = name => fs.readFileSync(path.join(__dirname, '..', name), 'utf8');
 const source = read('background-runtime.js');
 const css = read('environment-production.css');
-const html = read('index.html');
+const html = read('index.html') + read('styles.css');
 const chosen = JSON.parse(read('environment-default.json')).settings;
 const tick = () => new Promise(resolve => setImmediate(resolve));
 
@@ -81,7 +81,7 @@ test('production preserves the chosen visible values and excludes study code', (
 test('slow decode never reveals a bare window; readiness is set once and survives transitions', async () => {
     const app = boot();
     assert.equal(app.images.length, 1);
-    assert.equal(app.images[0].image.src, 'assets/environment/olive-bough.png');
+    assert.equal(app.images[0].image.src, 'assets/environment/olive-bough-mask.webp');
     assert.ok(!app.attrs.has('data-environment-ready'));
     assert.ok(app.attrs.has('data-environment-paused'));
     assert.equal(app.gridWrites, 1);
