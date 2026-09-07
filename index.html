@@ -3669,8 +3669,9 @@
             }
 
             .info-panel-comment {
-                display: flex;
-                align-items: flex-start;
+                display: grid;
+                grid-template-columns: 36px minmax(0, 1fr);
+                align-items: center;
                 gap: 12px;
                 padding: 12px 0;
                 border-bottom: 1px solid rgba(255,255,255,0.05);
@@ -3688,18 +3689,30 @@
                 align-items: center;
                 justify-content: center;
                 flex-shrink: 0;
+                color: #eee8df;
+                background: linear-gradient(
+                    160deg,
+                    color-mix(in srgb, var(--comment-accent) 68%, #39332e),
+                    color-mix(in srgb, var(--comment-accent) 36%, var(--active-bg-color))
+                );
+                box-shadow:
+                    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+                    inset 0 -3px 6px rgba(0, 0, 0, 0.24),
+                    0 3px 7px rgba(0, 0, 0, 0.24);
             }
 
             .info-panel-comment-icon svg {
                 width: 18px;
                 height: 18px;
+                fill: currentColor;
             }
 
             .info-panel-comment-text {
                 color: rgba(255,255,255,0.85);
                 font-size: 14px;
                 line-height: 1.5;
-                padding-top: 7px;
+                min-width: 0;
+                overflow-wrap: anywhere;
             }
 
             /* When info panel is open, GSAP drives transforms via a CSS variable */
@@ -6729,6 +6742,7 @@
                 const frame = e.target.closest('[data-tap-video]');
                 const controlsVisible = document.body.classList.contains('mobile-controls-visible');
                 const isMobile = window.innerWidth <= 600;
+                const tappedPlaybackControl = !!e.target.closest('.play-overlay-btn');
 
                 if (isMobile && controlsVisible && !e.target.closest('.play-overlay-btn')) {
                     hideMobilePlaybackControls();
@@ -6739,7 +6753,7 @@
 
                 const videoId = frame.getAttribute('data-tap-video');
 
-                if (e.target.closest('.play-overlay-btn')) {
+                if (tappedPlaybackControl && !isMobile) {
                     clearTimeout(tapTimer);
                     lastTapTime = 0;
                     lastTapVideoId = null;
@@ -6751,9 +6765,9 @@
                     return;
                 }
 
-                // Before playback is unlocked, only the explicit center button
-                // may start a video with sound.
-                if (!hasStartedExperience) return;
+                // Mobile likes work before playback starts, including on the center control.
+                // Defer its single-tap action so a second tap can like without starting playback.
+                if (!isMobile && !hasStartedExperience) return;
 
                 const now = Date.now();
                 const video = document.getElementById(videoId);
@@ -6788,7 +6802,16 @@
                         tapTimer = null;
                         lastTapTime = 0;
                         lastTapVideoId = null;
-                        if (window.innerWidth > 600) toggleVideo(videoId);
+                        // A queued tap must not start a reel after the user navigates away.
+                        if (getActiveVideoForFullscreen()?.id !== videoId) return;
+                        if (isMobile) {
+                            if (tappedPlaybackControl) {
+                                if (hasStartedExperience) toggleVideo(videoId);
+                                else startExperienceWithSound(videoId);
+                            }
+                        } else {
+                            toggleVideo(videoId);
+                        }
                     }, DOUBLE_TAP_DELAY);
                 }
             });
@@ -7107,7 +7130,7 @@
                     videoData.comments.forEach(c => {
                         const bg = c.avatarColor || (c.type === 'avatar' ? '#3498db' : 'rgba(255,255,255,0.12)');
                         html += `<div class="info-panel-comment">
-                            <div class="info-panel-comment-icon" style="background:${bg}">${getCommentIcon(c.type)}</div>
+                            <div class="info-panel-comment-icon" style="--comment-accent:${bg}" aria-hidden="true">${getCommentIcon(c.type)}</div>
                             <div class="info-panel-comment-text">${c.text}</div>
                         </div>`;
                     });

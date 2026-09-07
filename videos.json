@@ -28,7 +28,23 @@
                     "bgColor": "#09121F",
                     "title": "Acquisition on PayZapp",
                     "description": "Redesigned the core app experience. Simplified onboarding and navigation. Reworked key user journeys.",
-                    "comments": []
+                    "comments": [
+                        {
+                            "text": "Where does a first-time user hesitate? Exploring how clearer choices and a little guidance can make getting started feel less overwhelming.",
+                            "type": "eye",
+                            "avatarColor": "#476e91"
+                        },
+                        {
+                            "text": "Less friction. More momentum.",
+                            "type": "lightning",
+                            "avatarColor": "#927039"
+                        },
+                        {
+                            "text": "A clearer path from signing up to making that first payment.",
+                            "type": "check",
+                            "avatarColor": "#427b69"
+                        }
+                    ]
                 },
                 {
                     "id": "t1v2",
@@ -37,7 +53,18 @@
                     "bgColor": "#200F24",
                     "title": "Growth & Retention on PayZapp",
                     "description": "Designed growth and retention loops to keep people coming back after their first transaction.",
-                    "comments": []
+                    "comments": [
+                        {
+                            "text": "Give people a reason to return.",
+                            "type": "heart",
+                            "avatarColor": "#a5536c"
+                        },
+                        {
+                            "text": "Not every interaction needs a big reward. Sometimes a timely nudge, a useful shortcut, or a thoughtful detail is what makes an everyday payment feel better.",
+                            "type": "sparkle",
+                            "avatarColor": "#80629b"
+                        }
+                    ]
                 },
                 {
                     "id": "t1v3",
@@ -46,7 +73,28 @@
                     "bgColor": "#09182A",
                     "title": "Unicorn Design System",
                     "description": "A shared design system used across Zeta products to keep interfaces consistent and faster to ship.",
-                    "comments": []
+                    "comments": [
+                        {
+                            "text": "One shared design language.",
+                            "type": "eye",
+                            "avatarColor": "#476e91"
+                        },
+                        {
+                            "text": "Thinking beyond the happy path: loading, empty, error, and success states deserve the same attention as the main screen.",
+                            "type": "check",
+                            "avatarColor": "#427b69"
+                        },
+                        {
+                            "text": "A bridge between design decisions and the components developers build with.",
+                            "type": "code",
+                            "avatarColor": "#74609b"
+                        },
+                        {
+                            "text": "Reuse the basics. Spend time on the hard problems.",
+                            "type": "lightning",
+                            "avatarColor": "#927039"
+                        }
+                    ]
                 },
                 {
                     "id": "t1v4",
@@ -55,7 +103,13 @@
                     "bgColor": "#1E1330",
                     "title": "Neo",
                     "description": "Product design for Neo, focused on a clearer, more confident everyday banking experience.",
-                    "comments": []
+                    "comments": [
+                        {
+                            "text": "Banking should feel reassuring, not like a puzzle. Exploring how clearer language and a calmer hierarchy can help people understand where they are and what happens next.",
+                            "type": "check",
+                            "avatarColor": "#427b69"
+                        }
+                    ]
                 }
             ]
         },
@@ -136,7 +190,23 @@
                     "bgColor": "#08152B",
                     "title": "Veronica",
                     "description": "",
-                    "comments": []
+                    "comments": [
+                        {
+                            "text": "A little slice of life.",
+                            "type": "camera",
+                            "avatarColor": "#537b89"
+                        },
+                        {
+                            "text": "Some things are worth keeping simply because they make you smile. No big story needed.",
+                            "type": "heart",
+                            "avatarColor": "#b45a67"
+                        },
+                        {
+                            "text": "Finding something special in the ordinary.",
+                            "type": "sparkle",
+                            "avatarColor": "#927039"
+                        }
+                    ]
                 }
             ]
         }
