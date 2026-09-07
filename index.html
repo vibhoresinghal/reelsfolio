@@ -477,6 +477,11 @@
             background: #000;
         }
 
+        body.desktop-fullscreen-mode.fullscreen-cursor-hidden,
+        body.desktop-fullscreen-mode.fullscreen-cursor-hidden * {
+            cursor: none !important;
+        }
+
         body.desktop-fullscreen-mode .bg-layer {
             background: #000 !important;
             transition: none !important;
@@ -502,7 +507,14 @@
             display: none !important;
         }
 
-        body.desktop-fullscreen-mode .video-container,
+        /* Keep the feed vertical; only individual sections center their content. */
+        body.desktop-fullscreen-mode .video-container {
+            width: 100vw !important;
+            height: 100vh !important;
+            height: 100dvh !important;
+            display: block !important;
+        }
+
         body.desktop-fullscreen-mode .landing-section,
         body.desktop-fullscreen-mode .video-section,
         body.desktop-fullscreen-mode .video-content-wrapper {
@@ -517,7 +529,8 @@
         body.desktop-fullscreen-mode .video-frame,
         body.desktop-fullscreen-mode .landing-video-shell,
         body.desktop-fullscreen-mode .landing-video-frame {
-            width: min(calc(92vh * 9 / 16), 92vw) !important;
+            width: min(calc(98vh * 9 / 16), 98vw) !important;
+            width: min(calc(98dvh * 9 / 16), 98vw) !important;
             height: auto !important;
             aspect-ratio: 9/16 !important;
             border-radius: 8px !important;
@@ -528,7 +541,8 @@
         }
 
         body.desktop-fullscreen-mode .video-section.landscape-mode .video-frame {
-            width: min(calc(92vh * 16 / 9), calc(100vw - 80px)) !important;
+            width: min(calc(98vh * 16 / 9), 98vw) !important;
+            width: min(calc(98dvh * 16 / 9), 98vw) !important;
             aspect-ratio: 16/9 !important;
         }
 
@@ -4645,7 +4659,7 @@
                             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
                             updateMobileNav('home');
                             if (!suppressObserverPlayback && !isWarping && hasStartedExperience) debouncedPlayVideo('landing-video');
-                            if (document.fullscreenElement) fullscreenVideoId = 'landing-video';
+                            if (document.fullscreenElement && !suppressObserverPlayback) fullscreenVideoId = 'landing-video';
                             if (!isWarping) updateLikeButtonForCurrentVideo('landing', false, true);
                         } else if (isVideo) {
                             if (controlBar) controlBar.classList.toggle('hidden', !hasStartedExperience);
@@ -4661,7 +4675,7 @@
 
                             const videoId = entry.target.getAttribute('data-video-id');
                             if (!suppressObserverPlayback && !isWarping && hasStartedExperience) debouncedPlayVideo(videoId);
-                            if (document.fullscreenElement && videoId) fullscreenVideoId = videoId;
+                            if (document.fullscreenElement && !suppressObserverPlayback && videoId) fullscreenVideoId = videoId;
                             if (!isWarping) updateLikeButtonForCurrentVideo(videoId, false, true);
                         }
                     } else {
@@ -5068,7 +5082,10 @@
                 const previousSnapType = container.style.scrollSnapType;
                 container.style.scrollBehavior = 'auto';
                 container.style.scrollSnapType = 'none';
-                container.scrollTop = section.offsetTop;
+                const containerRect = container.getBoundingClientRect();
+                const sectionRect = section.getBoundingClientRect();
+                container.scrollTop += sectionRect.top + sectionRect.height / 2
+                    - (containerRect.top + container.clientTop + container.clientHeight / 2);
 
                 requestAnimationFrame(() => {
                     container.style.scrollBehavior = previousBehavior;
@@ -5121,6 +5138,7 @@
         async function toggleDesktopFullscreen() {
             if (window.innerWidth <= 600 || !document.fullscreenEnabled) return;
 
+            clearTimeout(playVideoDebounceTimer);
             try {
                 if (document.fullscreenElement) {
                     suppressObserverPlayback = true;
@@ -5174,6 +5192,35 @@
         if (!document.fullscreenEnabled) {
             document.getElementById('fullscreenBtn')?.classList.add('hidden');
         }
+
+        const FULLSCREEN_CURSOR_IDLE_DELAY = 2000;
+        let fullscreenCursorTimer = null;
+
+        function showFullscreenCursor() {
+            clearTimeout(fullscreenCursorTimer);
+            fullscreenCursorTimer = null;
+            document.body.classList.remove('fullscreen-cursor-hidden');
+        }
+
+        function scheduleFullscreenCursorHide() {
+            showFullscreenCursor();
+            if (document.fullscreenElement !== document.documentElement || document.hidden) return;
+
+            fullscreenCursorTimer = setTimeout(() => {
+                fullscreenCursorTimer = null;
+                if (document.fullscreenElement === document.documentElement && !document.hidden) {
+                    document.body.classList.add('fullscreen-cursor-hidden');
+                }
+            }, FULLSCREEN_CURSOR_IDLE_DELAY);
+        }
+
+        ['pointermove', 'pointerdown', 'wheel', 'keydown'].forEach(eventName => {
+            document.addEventListener(eventName, scheduleFullscreenCursorHide, { passive: true, capture: true });
+        });
+        document.addEventListener('fullscreenchange', scheduleFullscreenCursorHide);
+        document.addEventListener('visibilitychange', scheduleFullscreenCursorHide);
+        window.addEventListener('blur', showFullscreenCursor);
+        window.addEventListener('focus', scheduleFullscreenCursorHide);
 
         const IMMERSIVE_IDLE_DELAY = 2500;
         const IMMERSIVE_FADE_DURATION = 1600;
