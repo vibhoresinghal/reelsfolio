@@ -2523,6 +2523,8 @@
                         isScrolling = false;
                         navigationTargetIndex = null;
                         updateNavArrows();
+                        // Playback may have started while scrolling blocked the idle timer.
+                        scheduleDesktopImmersiveMode();
                     }
                 });
             }
