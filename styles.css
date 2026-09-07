@@ -94,12 +94,25 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: #091A12;
-            transition: background-color 0.6s ease-in-out;
+            /* One shared color interpolation also drives the adaptive controls. */
+            background-color: var(--active-bg-color);
             z-index: 0;
-            will-change: background-color;
             contain: strict;
         }
+
+        /* Subtle static dithering over the final blend softens dark gradient bands.
+           Normal blending remains effective in shadows where soft-light grain fades. */
+        .bg-layer::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 4;
+            pointer-events: none;
+            opacity: .025;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)' opacity='.9'/%3E%3C/svg%3E");
+            background-size: 180px 180px;
+        }
+        @media (max-width: 600px) { .bg-layer::after { content: none; } }
 
         .bg-grain {
             position: absolute;
@@ -2710,6 +2723,7 @@
                 width: var(--desktop-reel-width);
             }
 
+            .landing-profile-info,
             .video-section:not(.landscape-mode) .content-info-left {
                 left: auto;
                 right: calc(50% + var(--desktop-reel-width) / 2 + var(--reel-side-gap));
@@ -3633,5 +3647,3 @@
                 display: block;
             }
         }
-
-

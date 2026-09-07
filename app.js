@@ -35,16 +35,8 @@
 
         function setBackgroundColor(color) {
             if (!color || !bgLayer) return;
-            bgLayer.style.backgroundColor = color;
+            if (document.documentElement.style.getPropertyValue('--active-bg-color') === color) return;
             document.documentElement.style.setProperty('--active-bg-color', color);
-        }
-
-        // Keep experiment-controller color changes synchronized with adaptive controls.
-        if (bgLayer) {
-            new MutationObserver(() => {
-                const color = bgLayer.style.backgroundColor;
-                if (color) document.documentElement.style.setProperty('--active-bg-color', color);
-            }).observe(bgLayer, { attributes: true, attributeFilter: ['style'] });
         }
 
         // --- First-party analytics (session + events, no third-party cookies) ---
@@ -728,7 +720,7 @@
                         // Update background color based on the current section
                         // But skip updates if we are in the middle of a "warp" transition
                         const bgColor = entry.target.getAttribute('data-bg-color');
-                        if (bgColor && !isWarping) setBackgroundColor(bgColor);
+                        if (bgColor && !isWarping && entry.intersectionRatio >= 0.7) setBackgroundColor(bgColor);
 
                         // Update arrow positioning for landscape/portrait
                         const navArrows = document.getElementById('fixedNavArrows');
@@ -3346,5 +3338,4 @@
 
         // Initialize
         initApp();
-
 
