@@ -642,6 +642,7 @@
             const mainContainer = document.getElementById('mainScrollContainer');
             if (mainContainer) {
                 mainContainer.addEventListener('scroll', throttle(handleScroll, 100));
+                initDesktopMouseWheel(mainContainer);
             }
 
             // Mark landing video frame as loaded when video is ready
@@ -2570,6 +2571,51 @@
             scrollToVideo(newIndex);
         }
 
+        // Windows detented wheels can jump through native snap points. Keep macOS
+        // entirely native and only claim recognizable wheel steps on Windows.
+        // WheelEvent has no reliable mouse/trackpad flag: ambiguous input stays native.
+        function initDesktopMouseWheel(container) {
+            const platform = navigator.userAgentData?.platform || navigator.platform || '';
+            if (!/Win/i.test(platform)) return;
+            let lastClaimedAt = -Infinity;
+            let nativeUntil = 0;
+
+            container.addEventListener('wheel', (event) => {
+                if (window.innerWidth <= 600 || event.defaultPrevented || !event.cancelable ||
+                    event.ctrlKey || event.metaKey || event.altKey || event.shiftKey ||
+                    document.fullscreenElement || document.webkitFullscreenElement ||
+                    document.body.classList.contains('info-panel-open')) return;
+
+                // Never take over form controls or independently scrollable content.
+                if (event.target.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return;
+                for (let node = event.target; node && node !== container; node = node.parentElement) {
+                    if (node.scrollHeight > node.clientHeight + 1 &&
+                        /auto|scroll/.test(getComputedStyle(node).overflowY)) return;
+                }
+
+                const mode = event.deltaMode;
+                const y = Math.abs(event.deltaY);
+                if (!y) return;
+                const now = performance.now();
+                const stepped = event.deltaX === 0 && (mode === 1 || mode === 2 ||
+                    (mode === 0 && y >= 100 && Number.isInteger(y) &&
+                        (y % 100 === 0 || y % 120 === 0)));
+                if (!stepped) {
+                    // Preserve the whole trackpad gesture, including larger later deltas.
+                    nativeUntil = now + 800;
+                    return;
+                }
+                if (now < nativeUntil) return;
+
+                event.preventDefault();
+                const stillInGesture = now - lastClaimedAt < 180;
+                lastClaimedAt = now;
+                // Do not queue extra reels from wheel bursts, or interrupt arrow motion.
+                if (navigationTween || isScrolling || stillInGesture) return;
+                navigate(Math.sign(event.deltaY));
+            }, { passive: false });
+        }
+
         // Block horizontal scroll on trackpad (prevent visual glitches)
         document.addEventListener('wheel', (e) => {
             if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && Math.abs(e.deltaX) > 3) {
@@ -3338,4 +3384,3 @@
 
         // Initialize
         initApp();
-
