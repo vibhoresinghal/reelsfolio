@@ -12,6 +12,7 @@
         let userPaused = {}; // Track which videos were paused by the user
         let totalSectionsCount = 0; // Total sections for nav arrow visibility
         let playVideoDebounceTimer = null; // Debounce video playback during scroll
+        let pendingPlayVideoId = null;
         let suppressObserverPlayback = false;
 
 
@@ -715,15 +716,20 @@
 
         // Intersection Observer - for single continuous scroll page
         function initObserver() {
+            const scrollContainer = document.getElementById('mainScrollContainer');
+            const activeThreshold = 0.55;
             observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
-                    if (entry.isIntersecting) {
+                    // isIntersecting also stays true when crossing the threshold
+                    // on the way OUT. Only the mostly visible reel owns playback.
+                    if (entry.isIntersecting && entry.intersectionRatio >= activeThreshold) {
                         entry.target.classList.add('active');
+                        prepareVideoWindow(entry.target);
 
                         // Update background color based on the current section
                         // But skip updates if we are in the middle of a "warp" transition
                         const bgColor = entry.target.getAttribute('data-bg-color');
-                        if (bgColor && !isWarping && entry.intersectionRatio >= 0.7) setBackgroundColor(bgColor);
+                        if (bgColor && !isWarping) setBackgroundColor(bgColor);
 
                         // Update arrow positioning for landscape/portrait
                         const navArrows = document.getElementById('fixedNavArrows');
@@ -773,6 +779,11 @@
                     } else {
                         if (suppressObserverPlayback) return;
                         entry.target.classList.remove('active');
+                        const leavingVideoId = entry.target.querySelector('video')?.id;
+                        if (pendingPlayVideoId === leavingVideoId) {
+                            clearTimeout(playVideoDebounceTimer);
+                            pendingPlayVideoId = null;
+                        }
                         if (entry.target.classList.contains('video-section')) {
                             const videoId = entry.target.getAttribute('data-video-id');
                             pauseVideo(videoId);
@@ -782,41 +793,54 @@
                         }
                     }
                 });
-            }, { threshold: 0.7 });
+            }, { root: scrollContainer, threshold: activeThreshold });
 
             // Observe all section types (Grid is now an overlay, not observed)
             document.querySelectorAll('.landing-section, .video-section').forEach(section => {
                 observer.observe(section);
             });
 
-            // Lazy loading observer - preloads videos that are about to come into view
+            // Use the actual scrolling viewport. A window-rooted observer cannot
+            // preload through the feed's overflow clip, even with rootMargin.
             const lazyLoadObserver = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         const section = entry.target;
                         const videoId = section.getAttribute('data-video-id');
                         if (videoId) {
-                            lazyLoadVideo(videoId);
-                        }
-                        // Also preload the next video
-                        const nextSection = section.nextElementSibling;
-                        if (nextSection && nextSection.classList.contains('video-section')) {
-                            const nextVideoId = nextSection.getAttribute('data-video-id');
-                            if (nextVideoId) {
-                                lazyLoadVideo(nextVideoId);
-                            }
+                            lazyLoadVideo(videoId, 'metadata');
                         }
                     }
                 });
-            }, { rootMargin: '100% 0px 100% 0px', threshold: 0 }); // Preload 1 viewport ahead
+            }, { root: scrollContainer, rootMargin: '100% 0px', threshold: 0 });
 
             document.querySelectorAll('.video-section').forEach(section => {
                 lazyLoadObserver.observe(section);
             });
         }
 
+        // Buffer the current reel and its successor, not the entire portfolio.
+        // Nearby posters/metadata are cheap insurance for reverse or fast scrolling.
+        function prepareVideoWindow(section) {
+            const sections = Array.from(section.parentElement.querySelectorAll('.landing-section, .video-section'));
+            const index = sections.indexOf(section);
+            const saveData = navigator.connection?.saveData;
+            sections.forEach((candidate, candidateIndex) => {
+                const video = candidate.querySelector('video');
+                if (!video) return;
+                const distance = candidateIndex - index;
+                if (distance >= -1 && distance <= 2) {
+                    const buffer = distance === 0 || (distance === 1 && !saveData);
+                    if (!buffer && video.paused) video.preload = 'metadata';
+                    lazyLoadVideo(video.id, buffer ? 'auto' : 'metadata');
+                } else if (video.paused && video.getAttribute('src')) {
+                    video.preload = 'metadata';
+                }
+            });
+        }
+
         // Lazy load video source
-        function lazyLoadVideo(videoId) {
+        function lazyLoadVideo(videoId, preload = 'auto') {
             const video = document.getElementById(videoId);
             if (!video) return;
 
@@ -826,11 +850,12 @@
                 poster.removeAttribute('data-poster-src');
             }
 
-            // If video already has src, skip
-            if (video.src && video.src !== window.location.href) return;
-
+            // Assigning src while leaving preload="none" does not warm playback.
+            // Upgrade existing metadata-only sources without load(), which would
+            // discard buffered frames and abort a pending play on Safari.
+            if (preload === 'auto' || video.preload !== 'auto') video.preload = preload;
             const dataSrc = video.getAttribute('data-src');
-            if (dataSrc && !video.src) {
+            if (dataSrc && !video.getAttribute('src')) {
                 video.src = dataSrc;
                 video.load();
             }
@@ -842,18 +867,29 @@
         // This prevents audio bleed from intermediate sections during fast scrolling.
         function debouncedPlayVideo(videoId) {
             if (!hasStartedExperience) return;
+            const video = document.getElementById(videoId);
+            if (!video || pendingPlayVideoId === videoId ||
+                (currentVideoId === videoId && (!video.paused || userPaused[videoId]))) return;
 
             // Cancel any previous pending play
             clearTimeout(playVideoDebounceTimer);
-            // Immediately mute AND pause ALL videos to kill any audio instantly
+            pendingPlayVideoId = videoId;
+            lazyLoadVideo(videoId);
+            // Silence outgoing audio, but never restart an already playing target.
             document.querySelectorAll('.video-section video, .landing-section video').forEach(v => {
+                if (v === video) return;
                 v.muted = true;
                 if (!v.paused) v.pause();
             });
-            // Schedule play for the target video after scroll settles
+            // Briefly filter transient sections without waiting for trackpad inertia
+            // to finish. A stale timer must not start an offscreen video.
             playVideoDebounceTimer = setTimeout(() => {
+                pendingPlayVideoId = null;
+                const visibleId = getCurrentVideoId();
+                if (suppressObserverPlayback || isWarping ||
+                    (visibleId === 'landing' ? 'landing-video' : visibleId) !== videoId) return;
                 playVideo(videoId);
-            }, 150);
+            }, 60);
         }
 
 
@@ -938,15 +974,11 @@
             const video = document.getElementById(videoId);
             if (!video) return;
 
-            // Lazy load video source if not loaded yet
-            if (!video.src || video.src === window.location.href) {
-                const dataSrc = video.getAttribute('data-src');
-                if (dataSrc) {
-                    video.src = dataSrc;
-                    video.load();
-                }
-            }
+            clearTimeout(playVideoDebounceTimer);
+            pendingPlayVideoId = null;
+            lazyLoadVideo(videoId);
 
+            const isNewVideo = currentVideoId !== videoId;
             currentVideoId = videoId;
             isPlaying = true;
 
@@ -954,7 +986,7 @@
             document.getElementById('pauseIcon').style.display = 'block';
             document.getElementById('playIcon').style.display = 'none';
 
-            if (video.currentTime > 0.2) video.currentTime = 0;
+            if (isNewVideo && video.currentTime > 0.2) video.currentTime = 0;
             video.muted = isMuted;
             revealVideoOverPoster(video);
             bindBufferingIndicator(video);
@@ -2620,12 +2652,8 @@
             }, { passive: false });
         }
 
-        // Block horizontal scroll on trackpad (prevent visual glitches)
-        document.addEventListener('wheel', (e) => {
-            if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && Math.abs(e.deltaX) > 3) {
-                e.preventDefault();
-            }
-        }, { passive: false });
+        // Block horizontal scroll with feed CSS, not preventDefault(): cancelling
+        // diagonal wheel events also cancels their vertical Mac trackpad movement.
 
         // Horizontal swipe between categories (mobile)
         (function initCategorySwipe() {

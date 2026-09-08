@@ -157,6 +157,8 @@
         .video-container {
             height: 100vh;
             overflow-y: scroll;
+            overflow-x: hidden;
+            overscroll-behavior-x: none;
             scroll-snap-type: y mandatory;
             scroll-behavior: smooth;
             scrollbar-width: none;
