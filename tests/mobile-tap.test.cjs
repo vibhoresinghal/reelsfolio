@@ -5,7 +5,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 // Exercise the real tap handler with a virtual clock; never send test likes to production.
-const html = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const handler = html.slice(html.indexOf('        function initDoubleTapLike()'), html.indexOf('        let _dtTapCount'));
 
 function setup({ started = false, paused = true, width = 390 } = {}) {

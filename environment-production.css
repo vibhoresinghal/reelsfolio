@@ -111,13 +111,13 @@
 
 :root[data-production-environment] .bg-light-shader {
     opacity: 0;
-    transition: opacity 1200ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition: opacity 240ms ease-out;
 }
 :root[data-production-environment][data-environment-ready] .bg-light-shader { opacity: var(--bg-light-opacity); }
 :root[data-production-environment]:not([data-environment-ready]) .bg-light-texture::after,
 :root[data-environment-paused] .bg-light-texture::after { animation-play-state: paused; }
 @media (min-width: 601px) {
-    :root[data-production-environment][data-environment-ready] { --bg-tree-mask: url("assets/environment/olive-bough-mask.webp"); }
+    :root[data-production-environment][data-environment-ready] { --bg-tree-mask: url("assets/environment/olive-bough.png"); }
 }
 @media (max-width: 600px) {
     :root[data-production-environment] .bg-light-texture::after { content: none; will-change: auto; }

@@ -153,7 +153,7 @@
         if (ready || loading || mobile.matches || document.hidden) return;
         const image = new Image();
         image.decoding = 'async';
-        image.src = 'assets/environment/olive-bough-mask.webp';
+        image.src = 'assets/environment/olive-bough.png';
         loading = image.decode().then(() => {
             // Set the mask and reveal the complete window+foliage together only
             // after decode. The ready flag is never reset by navigation/resizing.
