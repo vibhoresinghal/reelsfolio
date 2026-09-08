@@ -22,11 +22,6 @@
 
     <!-- Preload critical resources -->
     <link rel="preload" href="videos.json" as="fetch" crossorigin>
-    <link rel="preload" href="posters/landing.jpg" as="image">
-    <link rel="preload" href="posters/t1v1.jpg" as="image">
-    <link rel="preload" href="posters/t1v2.jpg" as="image">
-    <!-- DNS prefetch for thumbnail domains -->
-    <link rel="dns-prefetch" href="https://placehold.co">
 
     <!-- Favicon -->
     <link rel="icon"
@@ -314,16 +309,12 @@
         }
 
         body.desktop-fullscreen-mode .video-frame video,
-        body.desktop-fullscreen-mode .landing-video-frame video,
-        body.desktop-fullscreen-mode .video-poster,
-        body.desktop-fullscreen-mode .landing-video-frame img,
-        body.desktop-fullscreen-mode .landing-video-frame .video-poster {
+        body.desktop-fullscreen-mode .landing-video-frame video {
             object-fit: cover !important;
             object-position: center !important;
         }
 
-        body.desktop-fullscreen-mode .video-section.landscape-mode .video-frame video,
-        body.desktop-fullscreen-mode .video-section.landscape-mode .video-poster {
+        body.desktop-fullscreen-mode .video-section.landscape-mode .video-frame video {
             object-fit: contain !important;
             object-position: center !important;
             background: #000 !important;
@@ -747,23 +738,6 @@
             cursor: pointer;
         }
 
-        .video-poster {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: center center;
-            pointer-events: none;
-            z-index: 2;
-            transition: opacity 0.4s ease, visibility 0s linear 0.4s;
-        }
-
-        .video-frame.has-decoded-frame .video-poster,
-        .landing-video-frame.has-decoded-frame .video-poster {
-            opacity: 0;
-            visibility: hidden;
-        }
 
         .video-buffering {
             position: absolute;
@@ -1515,282 +1489,6 @@
             height: clamp(20px, 4vw, 24px);
         }
 
-        /* Grid button at top - responsive sizing */
-        .grid-btn {
-            position: fixed;
-            top: clamp(12px, 3vh, 20px);
-            left: 50%;
-            transform: translateX(-50%);
-            width: clamp(40px, 8vw, 50px);
-            height: clamp(40px, 8vw, 50px);
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            color: white;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            transition: all 0.3s ease, opacity 0.3s ease, visibility 0.3s ease;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .grid-btn.hidden {
-            opacity: 0;
-            visibility: hidden;
-        }
-
-        .grid-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateX(-50%) scale(1.1);
-        }
-
-        .grid-btn svg {
-            width: clamp(18px, 4vw, 24px);
-            height: clamp(18px, 4vw, 24px);
-        }
-
-        /* Grid Section - UNIFIED FIXED OVERLAY */
-        .grid-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            padding-top: 160px;
-            /* Increased to avoid clash with lowered navbar */
-            z-index: 10000;
-            background: rgba(15, 7, 26, 0.98);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.4s;
-            pointer-events: none;
-        }
-
-        .grid-overlay.visible {
-            opacity: 1;
-            visibility: visible;
-            pointer-events: auto;
-        }
-
-        .grid-overlay-header {
-            display: none;
-        }
-
-        .grid-tab-nav {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            padding: 6px;
-            border-radius: 50px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .grid-tab-btn {
-            padding: 10px 20px;
-            background: transparent;
-            border: none;
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 14px;
-            font-weight: 500;
-            font-family: inherit;
-            cursor: pointer;
-            border-radius: 50px;
-            transition: all 0.3s ease;
-            white-space: nowrap;
-        }
-
-        .grid-tab-btn:hover {
-            color: rgba(255, 255, 255, 0.9);
-            background: rgba(255, 255, 255, 0.08);
-        }
-
-        .grid-tab-btn.active {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-        }
-
-        /* Grid panel for each tab's content */
-        /* Force the panels wrapper to stretch full width and center its children */
-        #gridPanelsContainer {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .grid-panel {
-            display: none;
-            width: 100%;
-            justify-content: center;
-        }
-
-        .grid-panel.active {
-            display: flex;
-        }
-
-        .grid-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-content: start;
-            height: auto;
-            max-height: calc(100vh - 200px);
-            overflow-y: auto;
-            /* Hide scrollbar across browsers */
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-            padding-bottom: 60px;
-            gap: 24px;
-            padding: 24px;
-            max-width: 1200px;
-            /* width: fit-content enables margin: 0 auto to center accurately when items don't fill max-width */
-            width: fit-content;
-            margin: 0 auto;
-        }
-
-        .grid-container::-webkit-scrollbar {
-            display: none;
-        }
-
-        /* Grid item entry animation — opacity + translateY only (no scale) to avoid CLS */
-        @keyframes gridItemEnter {
-            0% {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            100% {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .grid-overlay .grid-item {
-            opacity: 0;
-            transform: translateY(20px);
-            will-change: opacity, transform;
-        }
-
-        .grid-overlay.visible .grid-item {
-            animation: gridItemEnter 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-        }
-
-        /* Staggered animation delays for grid items */
-        .grid-overlay.visible .grid-item:nth-child(1) {
-            animation-delay: 0.05s;
-        }
-
-        .grid-overlay.visible .grid-item:nth-child(2) {
-            animation-delay: 0.1s;
-        }
-
-        .grid-overlay.visible .grid-item:nth-child(3) {
-            animation-delay: 0.15s;
-        }
-
-        .grid-overlay.visible .grid-item:nth-child(4) {
-            animation-delay: 0.2s;
-        }
-
-        .grid-overlay.visible .grid-item:nth-child(5) {
-            animation-delay: 0.25s;
-        }
-
-        .grid-overlay.visible .grid-item:nth-child(6) {
-            animation-delay: 0.3s;
-        }
-
-        .grid-overlay.visible .grid-item:nth-child(7) {
-            animation-delay: 0.35s;
-        }
-
-        .grid-overlay.visible .grid-item:nth-child(8) {
-            animation-delay: 0.4s;
-        }
-
-        .grid-overlay.visible .grid-item:nth-child(9) {
-            animation-delay: 0.45s;
-        }
-
-        .grid-overlay.visible .grid-item:nth-child(10) {
-            animation-delay: 0.5s;
-        }
-
-        .grid-overlay.visible .grid-item:nth-child(n+11) {
-            animation-delay: 0.55s;
-        }
-
-        .grid-item {
-            /* Same 9:16 aspect ratio as the video frame */
-            aspect-ratio: 9/16;
-            /* Height based on available vertical space to fit ~2 rows */
-            height: calc((100vh - 240px) / 2.2);
-            /* Ensure it doesn't get too wide or too tiny */
-            min-height: 200px;
-            width: auto;
-            border-radius: clamp(8px, 1.5vw, 12px);
-            overflow: hidden;
-            cursor: pointer;
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid transparent;
-            /* Only transition visual properties, not layout-triggering ones */
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-            position: relative;
-            /* Isolate internal paints from triggering outer layout shifts */
-            contain: layout style paint;
-            /* Prevent selection highlight when dragging */
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-            flex-shrink: 0;
-        }
-
-        .grid-item:hover {
-            border-color: rgba(255, 255, 255, 0.5);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-        }
-
-        .grid-item img {
-            /* Explicit dimensions prevent the browser from relying on intrinsic size */
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0;
-            transition: opacity 0.3s ease-in-out;
-        }
-
-        .grid-item img.loaded {
-            opacity: 1;
-        }
-
-        .grid-item .video-number {
-            position: absolute;
-            bottom: clamp(4px, 1vh, 8px);
-            left: clamp(4px, 1vw, 8px);
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: clamp(2px, 0.5vh, 4px) clamp(6px, 1vw, 10px);
-            border-radius: clamp(10px, 2vw, 16px);
-            font-size: clamp(10px, 1.5vw, 12px);
-            font-weight: 500;
-        }
-
         /* Tab Navigation - sticky on landing, becomes fixed at top when scrolling */
         .tab-nav {
             position: sticky;
@@ -1808,8 +1506,6 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             transition: opacity 0.3s ease, visibility 0.3s ease;
             width: fit-content;
-            /* Match spacing to scroll-margin-top positioning in grid view */
-            /* scroll-margin-top: 80px, tab top: ~20px, tab height: ~44px = 80-64 = 16px gap */
             margin: 0 auto 16px auto;
         }
 
@@ -1824,18 +1520,6 @@
             z-index: 11000;
             pointer-events: none;
             transition: top 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
-        }
-
-        .navbar-wrapper.grid-mode {
-            top: 60px;
-        }
-
-        .navbar-wrapper.grid-mode .logo-btn {
-            opacity: 0 !important;
-            visibility: hidden !important;
-            transform: scale(0.8) !important;
-            pointer-events: none !important;
-            /* Keep width/margins to prevent horizontal shift of the tabs */
         }
 
         .navbar-wrapper>* {
@@ -1875,54 +1559,6 @@
             color: white;
         }
 
-        /* Grid Overlay Button - Symmetrical to Logo Button */
-        .grid-overlay-btn {
-            width: clamp(40px, 6vw, 50px);
-            height: clamp(40px, 6vw, 50px);
-            border-radius: 50%;
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: inherit;
-            color: rgba(255, 255, 255, 0.85);
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-            position: relative;
-        }
-
-        .grid-overlay-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
-            transform: scale(1.05);
-            color: white;
-        }
-
-        .grid-overlay-btn svg {
-            position: absolute;
-            width: 24px;
-            height: 24px;
-            transition: all 0.3s ease;
-        }
-
-        .grid-overlay-btn .close-icon {
-            opacity: 0;
-            transform: rotate(-90deg) scale(0);
-        }
-
-        .navbar-wrapper.grid-mode .grid-overlay-btn .grid-icon {
-            opacity: 0;
-            transform: rotate(90deg) scale(0);
-        }
-
-        .navbar-wrapper.grid-mode .grid-overlay-btn .close-icon {
-            opacity: 1;
-            transform: rotate(0) scale(1);
-        }
-
         /* Global tabs - fixed behavior handled by navbar-wrapper */
         .tab-nav.global-tabs {
             margin: 0;
@@ -1938,7 +1574,7 @@
             }
         }
 
-        /* Landing position state - navbar moves down to between skills and grid */
+        /* Landing position state for the category navigation */
         .tab-nav.global-tabs.landing-position {
             /* Position handled by JS for perfect sync with scroll */
             pointer-events: auto;
@@ -1983,10 +1619,6 @@
 
 
 
-        /* Hide grid button when tabs are visible */
-        .grid-btn {
-            display: none;
-        }
 
         @media (max-width: 1024px) {
 
@@ -1995,12 +1627,6 @@
             }
         }
 
-        @media (max-height: 600px) {
-            .grid-container {
-                max-height: 80vh;
-                overflow-y: auto;
-            }
-        }
 
         /* Main scroll container */
         .main-scroll-container {
@@ -2558,25 +2184,6 @@
             }
         }
 
-        /* Grid item skeleton placeholder */
-        .grid-item::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(110deg,
-                    rgba(255, 255, 255, 0.05) 0%,
-                    rgba(255, 255, 255, 0.1) 50%,
-                    rgba(255, 255, 255, 0.05) 100%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-            border-radius: inherit;
-            z-index: 0;
-        }
-
-        .grid-item.loaded::before {
-            display: none;
-        }
-
         /* Mobile Bottom Navigation — hidden by default, shown at <=600px */
         .mobile-bottom-nav {
             display: none;
@@ -2829,15 +2436,6 @@
                 font-size: 12px !important;
             }
 
-            .grid-overlay-btn {
-                width: 36px !important;
-                height: 36px !important;
-            }
-
-            .grid-overlay-btn svg {
-                width: 20px;
-                height: 20px;
-            }
 
             /* Landing scrim for text readability over phone-frame */
             .landing-video-frame::after {
@@ -2856,16 +2454,6 @@
                 z-index: 210;
             }
 
-            .grid-overlay {
-                padding-top: 100px;
-                z-index: 10000;
-            }
-
-            .grid-item {
-                height: calc((100vh - 200px) / 2.5) !important;
-                height: calc((100dvh - 200px) / 2.5) !important;
-                min-height: 140px !important;
-            }
         }
 
         /* ===== MOBILE: <=600px — edge-to-edge video + bottom navbar ===== */
@@ -2966,9 +2554,6 @@
                 object-position: center bottom;
             }
 
-            .video-poster {
-                object-position: center bottom;
-            }
 
             /* Content overlay: above seekbar within shortened frame */
             .content-info-left {
@@ -3082,10 +2667,6 @@
                 background: transparent !important;
             }
 
-            .video-section.landscape-mode .video-poster {
-                object-fit: contain;
-                object-position: center center;
-            }
 
             .video-section.landscape-mode .video-seekbar {
                 bottom: 0 !important;
@@ -3590,6 +3171,17 @@
             }
         }
 
+        /* Reveal the real video and its play control once a frame is decoded. */
+        .video-frame:not(.has-first-frame) video,
+        .landing-video-frame:not(.has-first-frame) video,
+        .video-frame:not(.has-first-frame) .play-overlay-btn,
+        .landing-video-frame:not(.has-first-frame) .play-overlay-btn,
+        .video-frame:not(.has-first-frame) .video-seekbar,
+        .landing-video-frame:not(.has-first-frame) .video-seekbar {
+            visibility: hidden !important;
+            pointer-events: none !important;
+        }
+
         /* Keep initial controls hidden even before scripts and video data load. */
         body.initial-media-pending .video-nav-arrows,
         body.initial-media-pending .control-bar,
@@ -3633,41 +3225,12 @@
                 <!-- Global Fixed Tabs -->
                 <nav class="tab-nav global-tabs" id="globalTabs"></nav>
 
-                <!-- Grid Overlay Button -->
-                <button class="grid-overlay-btn" id="gridOverlayBtn" onclick="toggleCurrentGrid()" title="View Grid">
-                    <svg class="grid-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                        <path
-                            d="M5 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H7a2 2 0 01-2-2V5zM5 15a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H7a2 2 0 01-2-2v-2zM15 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM15 15a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                    </svg>
-                    <svg class="close-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
             </div>
 
             <!-- Horizontal Tabs Container -->
             <div class="tabs-container" id="tabsContainer"></div>
         </div>
     </div>
-
-    <!-- Unified Grid Overlay -->
-    <div class="grid-overlay" id="gridOverlay" onclick="handleGridOverlayClick(event)">
-        <div class="grid-overlay-header">
-            <nav class="grid-tab-nav" id="gridTabNav"></nav>
-        </div>
-        <div id="gridPanelsContainer"></div>
-    </div>
-
-    <!-- Grid Button at Top (hidden, replaced by tabs) -->
-    <button class="grid-btn hidden" id="gridBtn" onclick="goToVideo(0)">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-            <path fill-rule="evenodd"
-                d="M3 6a3 3 0 013-3h2.25a3 3 0 013 3v2.25a3 3 0 01-3 3H6a3 3 0 01-3-3V6zm9.75 0a3 3 0 013-3H21a3 3 0 013 3v2.25a3 3 0 01-3 3h-2.25a3 3 0 01-3-3V6zM3 15.75a3 3 0 013-3h2.25a3 3 0 013 3v2.25a3 3 0 01-3 3H6a3 3 0 01-3-3v-2.25zm9.75 0a3 3 0 013-3H21a3 3 0 013 3v2.25a3 3 0 01-3 3h-2.25a3 3 0 01-3-3v-2.25z"
-                clip-rule="evenodd" />
-        </svg>
-    </button>
 
     <!-- Control Bar -->
     <div class="control-bar hidden">
@@ -3759,7 +3322,7 @@
         <div class="info-panel-toolbar" id="infoPanelToolbar">
             <h2 id="infoPanelTitle">Project details</h2>
             <button class="nav-arrow-btn" id="infoPanelPlayback" type="button" aria-label="Play video"></button>
-            <button class="nav-arrow-btn" id="infoPanelClose" type="button" aria-label="Close project details"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button>
+            <button class="nav-arrow-btn" id="infoPanelClose" type="button" aria-label="Close project details"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button>
         </div>
         <div class="info-panel-content" id="infoPanelContent">
         </div>
@@ -3822,7 +3385,6 @@
         let hasStartedExperience = false;
         let observer = null;
         let currentVideoId = null;
-        let videosReady = {};
         let isScrolling = false;
         let userPaused = {}; // Track which videos were paused by the user
         let totalSectionsCount = 0; // Total sections for nav arrow visibility
@@ -3845,7 +3407,6 @@
         const bgLayer = document.getElementById('bgLayer');
         const tabsContainer = document.getElementById('tabsContainer');
         const globalTabs = document.getElementById('globalTabs');
-        const gridBtn = document.getElementById('gridBtn');
         const controlBar = document.querySelector('.control-bar');
 
         function setBackgroundColor(color) {
@@ -4242,7 +3803,7 @@
 
             const landing = videosData.landingSection || {};
 
-            // 1. Generate Tabs Navigation HTML - these are now scroll anchors or grid switchers
+            // Generate category navigation as scroll anchors.
             const tabButtonsHTML = videosData.tabs.map((tab, index) =>
                 `<button class="tab-btn" data-tab-id="${tab.id}" onclick="handleTabClick('${tab.id}')">${tab.label}</button>`
             ).join('');
@@ -4305,7 +3866,6 @@
                     </div>
                     <div class="landing-video-shell">
                     <div class="landing-video-frame" data-tap-video="landing-video">
-                        ${landing.thumbnail ? `<img class="video-poster" src="${landing.thumbnail}" alt="" decoding="async">` : ''}
                         <video id="landing-video" src="${landing.profileVideo || ''}" muted playsinline loop preload="auto"></video>
                         <div class="video-buffering" aria-hidden="true"><span class="video-buffering-ring"></span></div>
                         <div class="play-overlay-btn" id="btn-landing-video">
@@ -4357,7 +3917,6 @@
                                 </div>
                                 
                                 <div class="video-frame" data-tap-video="${video.id}">
-                                    ${video.thumbnail ? `<img class="video-poster" src="${video.thumbnail}" alt="" decoding="async">` : ''}
                                     <video id="${video.id}" ${isFirstVideo ? `src="${video.src}"` : ''} data-src="${video.src}" muted playsinline loop preload="${preloadStrategy}"></video>
                                     <div class="video-buffering" aria-hidden="true"><span class="video-buffering-ring"></span></div>
                                     <div class="play-overlay-btn" id="btn-${video.id}">
@@ -4440,19 +3999,9 @@
                 });
             });
 
-            // Decode and reveal the landing video's opening frame without playing it.
-            // A tiny seek is more reliable than currentTime 0 across mobile browsers.
+            // Prepare real opening frames without starting playback.
             const landingVideo = document.getElementById('landing-video');
-            const revealLandingFirstFrame = () => {
-                if (!hasStartedExperience && landingVideo?.paused && landingVideo.readyState >= 2) {
-                    landingVideo.currentTime = 0.01;
-                }
-            };
-            if (landingVideo?.readyState >= 2) {
-                revealLandingFirstFrame();
-            } else {
-                landingVideo?.addEventListener('loadeddata', revealLandingFirstFrame, { once: true });
-            }
+            document.querySelectorAll('.landing-section video, .video-section video').forEach(prepareVideoFirstFrame);
 
             // Initialize background with landing color
             setBackgroundColor(landing.bgColor || '#091A12');
@@ -4603,7 +4152,7 @@
                 });
             }, { threshold: 0.7 });
 
-            // Observe all section types (Grid is now an overlay, not observed)
+            // Observe landing and video sections.
             document.querySelectorAll('.landing-section, .video-section').forEach(section => {
                 observer.observe(section);
             });
@@ -4634,16 +4183,14 @@
             });
         }
 
-        // Lazy load video source
+        // Nearby reels need actual frame data, not just duration/dimensions.
         function lazyLoadVideo(videoId) {
             const video = document.getElementById(videoId);
             if (!video) return;
-
-            // If video already has src, skip
-            if (video.src && video.src !== window.location.href) return;
-
+            if (video.readyState < 2) video.preload = 'auto';
+            if (video.getAttribute('src')) return;
             const dataSrc = video.getAttribute('data-src');
-            if (dataSrc && !video.src) {
+            if (dataSrc) {
                 video.src = dataSrc;
                 video.load();
             }
@@ -4725,24 +4272,35 @@
             document.querySelectorAll('.video-section video, .landing-section video').forEach(bindBufferingIndicator);
         }
 
-        function revealVideoOverPoster(video) {
-            const frame = video.closest('.video-frame, .landing-video-frame');
-            if (!frame || frame.classList.contains('has-decoded-frame')) return;
-
-            let hidden = false;
-            const hidePoster = () => {
-                if (hidden || video.paused || video.readyState < 2) return;
-                hidden = true;
-                requestAnimationFrame(() => frame.classList.add('has-decoded-frame'));
-                video.removeEventListener('playing', hidePoster);
-                video.removeEventListener('timeupdate', hidePoster);
+        function prepareVideoFirstFrame(video) {
+            const frame = getVideoFrame(video);
+            if (!frame) return;
+            let openingSeekRequested = false;
+            const prepareOpeningFrame = () => {
+                // A tiny seek asks paused browsers to decode the opening frame.
+                // Never reset a video the visitor has already played or scrubbed.
+                if (!openingSeekRequested && video.paused && video.currentTime === 0 &&
+                    video.readyState >= 1 && Number.isFinite(video.duration) && video.duration > 0.01) {
+                    openingSeekRequested = true;
+                    video.currentTime = 0.01;
+                }
             };
-
-            if (typeof video.requestVideoFrameCallback === 'function') {
-                video.requestVideoFrameCallback(() => hidePoster());
-            }
-            video.addEventListener('playing', hidePoster);
-            video.addEventListener('timeupdate', hidePoster);
+            const showFrame = () => {
+                prepareOpeningFrame();
+                if (video.readyState < 2 || video.seeking) return;
+                frame.classList.add('has-first-frame', 'loaded');
+                // Allow the browser to stop speculative buffering of paused previews.
+                if (video.paused) video.preload = 'metadata';
+                video.removeEventListener('loadedmetadata', prepareOpeningFrame);
+                video.removeEventListener('loadeddata', showFrame);
+                video.removeEventListener('seeked', showFrame);
+                video.removeEventListener('playing', showFrame);
+            };
+            video.addEventListener('loadedmetadata', prepareOpeningFrame);
+            video.addEventListener('loadeddata', showFrame);
+            video.addEventListener('seeked', showFrame);
+            video.addEventListener('playing', showFrame);
+            showFrame();
         }
 
         function playVideo(videoId) {
@@ -4769,7 +4327,6 @@
 
             if (video.currentTime > 0.2) video.currentTime = 0;
             video.muted = isMuted;
-            revealVideoOverPoster(video);
             bindBufferingIndicator(video);
             if (video.readyState < 3) showBufferingSoon(video);
             video.play().catch(e => {
@@ -5156,7 +4713,6 @@
         function canEnterDesktopImmersiveMode() {
             if (window.innerWidth <= 600 || document.hidden || getFullscreenElement()) return false;
             if (isWarping || isScrolling) return false;
-            if (document.querySelector('.grid-overlay.visible')) return false;
 
             const video = getActiveVideoForFullscreen();
             return !!video && !video.paused && !video.ended;
@@ -5873,17 +5429,11 @@
             // for more reliable section tracking during scroll snap.
         }
 
-        // Close overlay on Escape key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                closeGridOverlay();
-            }
-        });
 
         // Scroll to first video from landing section
         // --- Navigation Functions (Simplified for single-page scroll) ---
 
-        // Handle tab button clicks - switch grid panel if in grid mode, otherwise scroll
+        // Handle tab button clicks by scrolling to the category.
         function handleTabClick(categoryId) {
             // Update visual state immediately so the browser can paint the active
             // indicator before any heavy scroll / DOM work runs (INP optimisation).
@@ -5893,18 +5443,11 @@
                 btn.classList.toggle('active', tabId === categoryId);
             });
 
-            const navbarWrapper = document.getElementById('navbarWrapper');
-            const isGridMode = navbarWrapper && navbarWrapper.classList.contains('grid-mode');
-
-            // Defer expensive scroll / grid switch + analytics to after next paint
+            // Defer scrolling and analytics until after the next paint.
             requestAnimationFrame(() => {
                 setTimeout(() => {
-                    if (isGridMode) {
-                        switchGridTab(categoryId);
-                    } else {
-                        scrollToCategory(categoryId);
-                    }
-                    trackEvent('tab_visit', { category: categoryId, via: isGridMode ? 'grid' : 'scroll' });
+                    scrollToCategory(categoryId);
+                    trackEvent('tab_visit', { category: categoryId, via: 'scroll' });
                 }, 0);
             });
         }
@@ -5915,7 +5458,6 @@
             updateMobileNav('home');
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
 
-            closeGridOverlay();
             const container = document.getElementById('mainScrollContainer');
             if (container) {
                 const landingVideo = document.getElementById('landing-video');
@@ -5981,105 +5523,6 @@
                 // Update like button for target section immediately
                 const videoId = section.getAttribute('data-video-id');
                 if (videoId) updateLikeButtonForCurrentVideo(videoId, false, true);
-            }
-        }
-
-        function toggleCurrentGrid() {
-            const gridOverlay = document.getElementById('gridOverlay');
-            if (gridOverlay.classList.contains('visible')) {
-                closeGridOverlay();
-            } else {
-                openGridOverlay();
-            }
-        }
-
-        // Track if video was playing before grid opened
-        let videoWasPlayingBeforeGrid = false;
-
-        function openGridOverlay(activeCategory = null) {
-            const gridOverlay = document.getElementById('gridOverlay');
-            const gridPanelsContainer = document.getElementById('gridPanelsContainer');
-            const navbarWrapper = document.getElementById('navbarWrapper');
-            trackEvent('grid_open', {});
-
-            // Determine which category to show based on current scroll position
-            const currentSection = document.querySelector('.video-section.active, .landing-section.active');
-            const currentCat = currentSection?.getAttribute('data-category') || 'zeta';
-            const effectiveCategory = activeCategory || currentCat;
-
-            // Highlight the correct tab button
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                const tabId = btn.getAttribute('data-tab-id');
-                btn.classList.toggle('active', tabId === effectiveCategory);
-            });
-
-            // Pause current video for performance
-            if (currentVideoId) {
-                const video = document.getElementById(currentVideoId);
-                if (video && !video.paused) {
-                    videoWasPlayingBeforeGrid = true;
-                    video.pause();
-                } else {
-                    videoWasPlayingBeforeGrid = false;
-                }
-            }
-
-            // Generate grid panels for all tabs
-            gridPanelsContainer.innerHTML = videosData.tabs.map((tab) => `
-                <div class="grid-panel ${tab.id === effectiveCategory ? 'active' : ''}" data-panel-id="${tab.id}">
-                    <div class="grid-container">
-                        ${tab.videos.map((video, vIndex) => `
-                            <div class="grid-item" onclick="goToVideoFromGrid('${tab.id}', ${vIndex})">
-                                <img src="${video.thumbnail || 'https://placehold.co/360x640/png?text=Thumbnail'}" 
-                                     width="360" height="640"
-                                     draggable="false" 
-                                     loading="${tab.id === effectiveCategory ? 'eager' : 'lazy'}"
-                                     onload="this.classList.add('loaded'); this.parentElement.classList.add('loaded');" />
-                                <span class="video-number">${vIndex + 1}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `).join('');
-
-            gridOverlay.classList.add('visible');
-            if (navbarWrapper) navbarWrapper.classList.add('grid-mode');
-        }
-
-        function switchGridTab(tabId) {
-            // Update tab buttons
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                const btnTabId = btn.getAttribute('data-tab-id');
-                btn.classList.toggle('active', btnTabId === tabId);
-            });
-            // Update panels
-            document.querySelectorAll('.grid-panel').forEach(panel => {
-                const panelId = panel.getAttribute('data-panel-id');
-                panel.classList.toggle('active', panelId === tabId);
-            });
-        }
-
-        function closeGridOverlay() {
-            const gridOverlay = document.getElementById('gridOverlay');
-            const navbarWrapper = document.getElementById('navbarWrapper');
-
-            if (gridOverlay) gridOverlay.classList.remove('visible');
-            if (navbarWrapper) navbarWrapper.classList.remove('grid-mode');
-
-            // Resume video if it was playing before
-            if (videoWasPlayingBeforeGrid && currentVideoId) {
-                const video = document.getElementById(currentVideoId);
-                if (video) video.play();
-            }
-        }
-
-        function handleGridOverlayClick(event) {
-            const isClickOnContent = event.target.closest('.grid-item') ||
-                event.target.closest('.grid-tab-nav') ||
-                event.target.closest('.grid-close-btn');
-
-            if (!isClickOnContent) {
-                closeGridOverlay();
             }
         }
 
@@ -6187,46 +5630,6 @@
                         else if (allSections[snappedIndex].classList.contains('landing-section')) playVideo('landing-video');
                     }
                 }, 800);
-            }
-        }
-
-        // Navigate to a video from the grid overlay
-        function goToVideoFromGrid(categoryId, videoIndex) {
-            closeGridOverlay();
-
-            // Immediately silence all videos before scrolling
-            document.querySelectorAll('.video-section video, .landing-section video').forEach(v => {
-                v.muted = true;
-                if (!v.paused) v.pause();
-            });
-
-            const container = document.getElementById('mainScrollContainer');
-            if (!container) return;
-
-            // Find the target section among all sections
-            const allSections = container.querySelectorAll('.landing-section, .video-section');
-            const categorySections = container.querySelectorAll(`[data-category="${categoryId}"]`);
-
-            if (!categorySections[videoIndex]) return;
-
-            const targetSection = categorySections[videoIndex];
-
-            // Find the absolute index of this section
-            let absoluteIndex = -1;
-            allSections.forEach((s, idx) => {
-                if (s === targetSection) {
-                    absoluteIndex = idx;
-                }
-            });
-
-            if (absoluteIndex >= 0) {
-                const targetTop = absoluteIndex * getSectionHeight();
-                const targetColor = targetSection.getAttribute('data-bg-color');
-                smartScrollTo(targetTop, container, targetColor);
-
-                // Explicitly update like button
-                const videoId = targetSection.getAttribute('data-video-id');
-                if (videoId) updateLikeButtonForCurrentVideo(videoId, false, true);
             }
         }
 
@@ -6685,14 +6088,6 @@
             let returnFocus = null;
             let previousOverflow = '';
             const panelDuration = (seconds) => window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : seconds;
-            // Use the existing site icons as the source of truth.
-            const closeIcon = document.querySelector('.grid-toggle-btn .close-icon, .close-icon')?.cloneNode(true);
-            if (closeIcon) {
-                closeIcon.removeAttribute('class');
-                closeIcon.setAttribute('aria-hidden', 'true');
-                closeButton.replaceChildren(closeIcon);
-            }
-
             function syncPanelPlayback() {
                 const video = _activeFrame?.querySelector('video');
                 const icon = document.getElementById(video && !video.paused ? 'pauseIcon' : 'playIcon').cloneNode(true);

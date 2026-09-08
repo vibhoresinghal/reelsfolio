@@ -81,7 +81,7 @@ test('production preserves the chosen visible values and excludes study code', (
 test('slow decode never reveals a bare window; readiness is set once and survives transitions', async () => {
     const app = boot();
     assert.equal(app.images.length, 1);
-    assert.equal(app.images[0].image.src, 'assets/environment/olive-bough.png');
+    assert.equal(app.images[0].image.src, 'assets/environment/olive-bough.webp');
     assert.ok(!app.attrs.has('data-environment-ready'));
     assert.ok(app.attrs.has('data-environment-paused'));
     assert.equal(app.gridWrites, 1);
