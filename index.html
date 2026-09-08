@@ -2569,10 +2569,15 @@
                 cursor: pointer;
             }
 
+            .content-title,
+            .landing-name {
+                font-size: 16px !important;
+                line-height: 1.2 !important;
+                margin-bottom: 2px !important;
+            }
+
             .content-title {
                 order: -1 !important;
-                font-size: 16px !important;
-                margin-bottom: 2px !important;
             }
 
             .content-desc {
@@ -2630,7 +2635,6 @@
             }
 
             .landing-name {
-                font-size: 28px !important;
                 font-family: 'Inter', sans-serif !important;
                 font-weight: 700 !important;
                 letter-spacing: -0.02em !important;
@@ -2904,7 +2908,7 @@
                 z-index: 12000;
                 display: flex;
                 flex-direction: column;
-                background: color-mix(in srgb, var(--active-bg-color) 48%, #0d0b0c);
+                background: color-mix(in srgb, var(--active-bg-color) 28%, #141414);
                 border-radius: 16px 16px 0 0;
                 pointer-events: none;
                 will-change: transform;
@@ -3051,8 +3055,8 @@
                 color: #eee8df;
                 background: linear-gradient(
                     160deg,
-                    color-mix(in srgb, var(--comment-accent) 68%, #39332e),
-                    color-mix(in srgb, var(--comment-accent) 36%, var(--active-bg-color))
+                    color-mix(in srgb, var(--comment-accent) 48%, #343230),
+                    color-mix(in srgb, var(--comment-accent) 28%, #202020)
                 );
                 box-shadow:
                     inset 0 1px 0 rgba(255, 255, 255, 0.18),

@@ -140,6 +140,24 @@ function renderProjects() {
     const secondsTotal = rows.reduce((s,p)=>s+(p.seconds||0),0);
     $('projects').innerHTML = rows.length ? rows.map((p,i)=>`<article class="card project-card"><div class="project-top"><span class="rank numeric">${String(i+1).padStart(2,'0')}</span><h2>${esc(clipName(p.id))}</h2>${present(p.seconds)&&secondsTotal?`<span class="project-share numeric" aria-label="${Math.round(p.seconds/secondsTotal*100)}% of reported watch time">${Math.round(p.seconds/secondsTotal*100)}%</span>`:''}</div><div class="bar-track" aria-hidden="true"><div class="bar-fill" style="--share:${secondsTotal?(p.seconds||0)/secondsTotal*100:0}%"></div></div><div class="project-stats"><div><strong class="numeric">${metricNumber(p.views)}</strong><span>Views</span></div><div><strong class="numeric">${esc(watchLabel(p.seconds))}</strong><span>Watch time</span></div><div><strong class="numeric">${esc(watchLabel(p.average))}</strong><span>Watch / view</span></div></div></article>`).join('') : '<div class="empty"><strong>No project activity yet</strong>Recorded video views and watch time will appear here.</div>';
 }
+const ACTIVE_WINDOW_MS = 2 * 60 * 1000;
+function guestIsActive(group, now = Date.now()) {
+    return group.visits.some(session => {
+        const last = Math.max(Number(session.started_at)||0, Number(session.ended_at)||0);
+        return last > 0 && now >= last && now - last < ACTIVE_WINDOW_MS;
+    });
+}
+function activeGuestBadge(group) {
+    return '<span class="active-guest" data-active-guest="'+esc(group.key)+'" '+(guestIsActive(group)?'':'hidden')+' title="Activity recorded in the last 2 minutes; not confirmed live" aria-label="Active: activity recorded in the last 2 minutes, not confirmed live"><span aria-hidden="true"></span>Active</span>';
+}
+function syncActiveGuests() {
+    const groups = new Map(guestGroups().map(group=>[group.key,group]));
+    const now = Date.now();
+    for (const badge of document.querySelectorAll('[data-active-guest]')) {
+        const group = groups.get(badge.dataset.activeGuest);
+        badge.hidden = !group || !guestIsActive(group,now);
+    }
+}
 function guestGroups() {
     const groups = new Map();
     for (const session of sessions) {
@@ -160,7 +178,7 @@ function renderVisits() {
         const s = group.latest, count = group.visits.length;
         const path = [...new Set(group.visits.flatMap(visit=>visit.path||[]).map(clipName))];
         const route = path.length ? path.slice(0,2).join(' \u2192 ')+(path.length>2?' +'+(path.length-2)+' more':'') : 'No project opened';
-        return '<button class="visit-card" data-session="'+esc(group.key)+'" aria-haspopup="dialog"><span class="visit-heading"><strong>'+(s.guest_number?'Guest '+esc(s.guest_number):'Guest')+'</strong><span class="badge'+(count>1?' returning':'')+'">'+number(count)+(count===1?' visit':' visits')+'</span></span><span class="visit-meta">Last seen '+esc(stamp(s.started_at))+'</span><span class="visit-path">'+esc(route)+'</span><span class="visit-footer"><span>'+esc([s.os||s.device,s.browser].filter(Boolean).join(' / ')||'Device not reported')+' &middot; '+esc(sourceLabel(s.referrer,s.landing_path))+'</span><span class="arrow" aria-hidden="true">&rarr;</span></span></button>';
+        return '<button class="visit-card" data-session="'+esc(group.key)+'" aria-haspopup="dialog"><span class="visit-heading"><strong>'+(s.guest_number?'Guest '+esc(s.guest_number):'Guest')+'</strong><span class="guest-badges">'+activeGuestBadge(group)+'<span class="badge'+(count>1?' returning':'')+'">'+number(count)+(count===1?' visit':' visits')+'</span></span></span><span class="visit-meta">Last seen '+esc(stamp(s.started_at))+'</span><span class="visit-path">'+esc(route)+'</span><span class="visit-footer"><span>'+esc([s.os||s.device,s.browser].filter(Boolean).join(' / ')||'Device not reported')+' &middot; '+esc(sourceLabel(s.referrer,s.landing_path))+'</span><span class="arrow" aria-hidden="true">&rarr;</span></span></button>';
     }).join('') : '<div class="empty"><strong>No guests in this view</strong>Try a different date range or device.</div>';
     $('loadMore').hidden = guestVisible>=guests.length;
     $('loadMore').disabled = listBusy;
@@ -281,7 +299,7 @@ function openGuest(id) {
     const guestName=group.latest.guest_number?'Guest '+group.latest.guest_number:'Guest';
     $('visitHeading').textContent=guestName;
     const count=group.visits.length;
-    $('visitDetail').innerHTML='<section class="guest-history" aria-label="Guest visits"><p class="guest-history-label">'+number(count)+(count===1?' visit':' visits')+' in this date range'+(loadedDevice?' on this device':'')+'</p>'+(count>1?'<div class="guest-session-list" aria-label="Choose a visit">'+group.visits.map((s,i)=>'<button class="guest-session" data-guest-session="'+esc(s.id)+'" aria-pressed="'+(i===0)+'" aria-controls="sessionDetail"><span>'+esc(stamp(s.started_at))+'</span><span class="note">'+(s.visit_number?'Visit '+esc(s.visit_number)+' &middot; ':'')+esc(sessionDuration(s))+(i===0?' &middot; Latest':'')+'</span></button>').join('')+'</div>':'')+'</section><div id="sessionDetail" aria-live="polite"></div>';
+    $('visitDetail').innerHTML='<section class="guest-history" aria-label="Guest visits"><p class="guest-history-label">'+number(count)+(count===1?' visit':' visits')+' in this date range'+(loadedDevice?' on this device':'')+'</p>'+activeGuestBadge(group)+'<p class="note active-explanation" data-active-guest="'+esc(group.key)+'" '+(guestIsActive(group)?'':'hidden')+'>Activity recorded in the last 2 minutes, not confirmed live.</p>'+(count>1?'<div class="guest-session-list" aria-label="Choose a visit">'+group.visits.map((s,i)=>'<button class="guest-session" data-guest-session="'+esc(s.id)+'" aria-pressed="'+(i===0)+'" aria-controls="sessionDetail"><span>'+esc(stamp(s.started_at))+'</span><span class="note">'+(s.visit_number?'Visit '+esc(s.visit_number)+' &middot; ':'')+esc(sessionDuration(s))+(i===0?' &middot; Latest':'')+'</span></button>').join('')+'</div>':'')+'</section><div id="sessionDetail" aria-live="polite"></div>';
     $('visitDialog').showModal(); document.body.classList.add('detail-open'); $('visitDialog').scrollTop=0;
     history.pushState({rfVisit:id},'',location.href); $('closeVisit').focus({preventScroll:true}); fetchDetail(group.latest.id);
 }
@@ -331,3 +349,7 @@ setPeriod();
 const url=new URL(location.href), urlSecret=url.searchParams.get('token')||url.searchParams.get('password');
 if(urlSecret){url.searchParams.delete('token');url.searchParams.delete('password');history.replaceState({},'',url.pathname+url.search+url.hash);}
 if(urlSecret||token){$('unlockBtn').disabled=true;$('unlockBtn').textContent='Opening...';unlock(urlSecret||token).catch(error=>{$('gateError').textContent=error.message;}).finally(()=>{$('unlockBtn').disabled=false;$('unlockBtn').textContent='Open dashboard';});}
+
+// Expire badges locally; presence adds no network requests or tracking events.
+setInterval(()=>{if(!document.hidden&&!$('app').hidden)syncActiveGuests();},15000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncActiveGuests();});

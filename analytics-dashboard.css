@@ -298,3 +298,8 @@ select, input[type=password] { border-color: #ffffff16; background: #191b1d; }
 .guest-session[aria-pressed=true] > span:first-child { color: var(--accent); }
 .guest-session:focus-visible { outline-offset: -2px; }
 #sessionDetail .dialog-hero > h2 { display: none; }
+
+.guest-badges { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px; }
+.active-guest { display: inline-flex; align-items: center; gap: 5px; color: #a6d8b2; font-size: 10px; font-weight: 500; white-space: nowrap; }
+.active-guest > span { width: 5px; height: 5px; border-radius: 50%; background: #83c995; flex-shrink: 0; }
+.active-explanation { margin: 4px 0 10px; }
