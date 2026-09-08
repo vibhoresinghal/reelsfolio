@@ -10,9 +10,9 @@
     <meta name="description"
         content="Vibhore Singhal - Sr. UX Designer Portfolio showcasing design work at Zeta, personal projects, and films.">
     <title>ReelsFolio - Vibhore Singhal</title>
-    <link rel="stylesheet" href="environment-production.css?v=olive-1">
-    <link rel="preload" href="assets/environment/olive-bough.png" as="image" media="(min-width: 601px)">
-    <script defer src="background-runtime.js?v=olive-1"></script>
+    <link rel="stylesheet" href="environment-production.css?v=olive-2">
+    <link rel="preload" href="assets/environment/olive-bough.webp" as="image" type="image/webp" crossorigin="anonymous" media="(min-width: 601px)">
+    <script defer src="background-runtime.js?v=olive-2"></script>
 
     <!-- Preconnect to external domains -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3590,10 +3590,21 @@
             }
         }
 
+        /* Keep initial controls hidden even before scripts and video data load. */
+        body.initial-media-pending .video-nav-arrows,
+        body.initial-media-pending .control-bar,
+        body.initial-media-pending .play-overlay-btn,
+        body.initial-media-pending .video-seekbar,
+        body.initial-media-pending .landing-video-shell {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            transition: none !important;
+        }
     </style>
 </head>
 
-<body class="experience-awaiting-start">
+<body class="experience-awaiting-start initial-media-pending intro-pending">
     <!-- Background that transitions with each video -->
     <div class="bg-layer" id="bgLayer">
         <div class="bg-light-shader" aria-hidden="true">
@@ -4105,37 +4116,43 @@
                 videosData = rewriteMediaTree(await response.json());
                 applyMediaOriginPreconnects();
 
-                // Dynamically preload critical landing resources
-                const landing = videosData.landingSection;
-                if (landing) {
-                    // Preload landing video for faster playback
-                    if (landing.profileVideo) {
-                        const videoPreload = document.createElement('link');
-                        videoPreload.rel = 'preload';
-                        videoPreload.as = 'fetch';
-                        videoPreload.crossOrigin = 'anonymous';
-                        videoPreload.href = landing.profileVideo;
-                        document.head.appendChild(videoPreload);
-                    }
-                }
-
                 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-                if (!reduceMotion) document.body.classList.add('intro-pending');
                 renderApp();
                 initLikeButton(); // Initialize like button state
                 initSoundHint(); // Show 'Tap for sound' hint on first visit
                 initMobileFirstReelNudge();
                 initDesktopMuteHover();
                 initBufferingIndicators();
-                if (!reduceMotion) {
+                const initialVideos = [...document.querySelectorAll('.video-section video, .landing-section video')];
+                const container = document.getElementById('mainScrollContainer');
+                let revealScheduled = false;
+                const revealInitialMedia = () => {
+                    const activeId = getCurrentVideoId();
+                    const video = document.getElementById(activeId === 'landing' ? 'landing-video' : activeId);
+                    if (revealScheduled || !video || video.readyState < 2 || video.seeking) return;
+                    revealScheduled = true;
                     requestAnimationFrame(() => {
-                        requestAnimationFrame(() => {
-                            document.body.classList.remove('intro-pending');
+                        revealScheduled = false;
+                        const nextId = getCurrentVideoId();
+                        if ((nextId === 'landing' ? 'landing-video' : nextId) !== video.id || video.readyState < 2 || video.seeking) return;
+                        initialVideos.forEach(item => {
+                            item.removeEventListener('loadeddata', revealInitialMedia);
+                            item.removeEventListener('seeked', revealInitialMedia);
+                        });
+                        container?.removeEventListener('scroll', revealInitialMedia);
+                        document.body.classList.remove('initial-media-pending', 'intro-pending');
+                        if (!reduceMotion) {
                             document.body.classList.add('intro-ready');
                             window.setTimeout(() => document.body.classList.remove('intro-ready'), 1600);
-                        });
+                        }
                     });
-                }
+                };
+                initialVideos.forEach(video => {
+                    video.addEventListener('loadeddata', revealInitialMedia);
+                    video.addEventListener('seeked', revealInitialMedia);
+                });
+                container?.addEventListener('scroll', revealInitialMedia, { passive: true });
+                revealInitialMedia();
             } catch (error) {
                 console.error('Failed to load videos:', error);
                 document.body.classList.remove('intro-pending');
