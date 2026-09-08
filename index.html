@@ -2730,6 +2730,29 @@
                     calc(91vh * 9 / 16),
                     calc(100vw - 2 * var(--reel-edge-space) - 2 * var(--reel-side-width) - 2 * var(--reel-comment-gap))
                 );
+                --landscape-edge-space: clamp(28px, 2.5vw, 48px);
+                --landscape-control-gap: clamp(20px, 2vw, 32px);
+                --landscape-control-width: 48px;
+                --desktop-landscape-width: min(
+                    calc(91vh * 16 / 9),
+                    calc(100vw - 2 * var(--landscape-edge-space) - 2 * var(--landscape-control-gap) - 2 * var(--landscape-control-width))
+                );
+            }
+
+            /* Reserve symmetric gutters so the video stays centred and its
+               controls have real breathing room outside the frame. */
+            body:not(.desktop-fullscreen-mode) .video-section.landscape-mode .video-frame {
+                width: var(--desktop-landscape-width);
+            }
+
+            body:not(.desktop-fullscreen-mode) .video-nav-arrows.landscape {
+                left: calc(50% + var(--desktop-landscape-width) / 2 + var(--landscape-control-gap));
+                width: var(--landscape-control-width);
+            }
+
+            body.landscape-video-active:not(.desktop-fullscreen-mode) .control-bar {
+                top: var(--landscape-edge-space);
+                right: var(--landscape-edge-space);
             }
 
             body:not(.desktop-fullscreen-mode) .video-section:not(.landscape-mode) .video-frame {
