@@ -42,7 +42,40 @@
     z-index: 1;
     pointer-events: none;
     mix-blend-mode: soft-light;
+    animation: grid-loading-enter 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+@keyframes grid-loading-enter {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+/* Loading light follows the existing grid lines, without illuminating the cells. */
+.grid-loading-highlight {
+    opacity: 0;
+    transition: opacity 240ms ease-out;
+}
+.grid-loading-band {
+    animation: grid-loading-sweep 4.05s cubic-bezier(0.37, 0, 0.63, 1) 600ms infinite both;
+    animation-play-state: paused;
+}
+body.initial-media-pending .grid-loading-highlight {
+    animation: grid-loading-arrive 400ms ease-out 600ms both;
+}
+body.initial-media-pending .grid-loading-band { animation-play-state: running; }
+@keyframes grid-loading-arrive {
+    from { opacity: 0; }
+    to { opacity: 0.9; }
+}
+@keyframes grid-loading-sweep {
+    0% { transform: translate(0, 0); }
+    96%, 100% { transform: translate(var(--grid-shimmer-travel-x), var(--grid-shimmer-travel-y)); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .bg-grid-cutting-mat { animation: none; }
+    .grid-loading-band { animation: none; transform: translate(calc(var(--grid-shimmer-travel-x) * 0.4), calc(var(--grid-shimmer-travel-y) * 0.4)); }
+    body.initial-media-pending .grid-loading-highlight { animation: none; opacity: 0.18; }
+    .grid-loading-highlight { transition: none; }
+}
+
 .bg-light-texture { position: absolute; pointer-events: none; }
         :root[data-bg-light-pattern="window-foliage"] .bg-light-texture {
             inset: 3% -8% 1% 12%;

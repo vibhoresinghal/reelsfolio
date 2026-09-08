@@ -110,7 +110,22 @@
         }
 
         cuttingMatSvg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+        cuttingMatSvg.setAttribute('style', `--grid-shimmer-travel-x: ${width * 1.6}px; --grid-shimmer-travel-y: ${height * 1.6}px`);
         cuttingMatSvg.innerHTML = `
+            <defs>
+                <linearGradient id="grid-loading-band" gradientUnits="userSpaceOnUse" x1="${-width * 0.55}" y1="${-height * 0.55}" x2="0" y2="0">
+                    <stop offset="0" stop-color="white" stop-opacity="0"/>
+                    <stop offset="0.30" stop-color="white" stop-opacity="0"/>
+                    <stop offset="0.48" stop-color="white" stop-opacity="0.8"/>
+                    <stop offset="0.6" stop-color="white" stop-opacity="1"/>
+                    <stop offset="0.70" stop-color="white" stop-opacity="0.8"/>
+                    <stop offset="0.88" stop-color="white" stop-opacity="0"/>
+                    <stop offset="1" stop-color="white" stop-opacity="0"/>
+                </linearGradient>
+                <mask id="grid-loading-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="${width}" height="${height}">
+                    <rect class="grid-loading-band" x="${-width}" y="${-height}" width="${width * 3}" height="${height * 3}" fill="url(#grid-loading-band)"/>
+                </mask>
+            </defs>
             <g fill="none" stroke="${color}" stroke-width="${state.thickness}" stroke-opacity="${minorOpacity}">
                 ${minorLines.join('')}
             </g>
@@ -125,6 +140,15 @@
             <g fill="${color}" fill-opacity="${majorOpacity}" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9">
                 ${labels.join('')}
                 ${guideLabels.join('')}
+            </g>
+            <g class="grid-loading-highlight" fill="none" stroke="${color}" stroke-width="${state.thickness}" mask="url(#grid-loading-mask)">
+                <g stroke-opacity="0.55">${minorLines.join('')}</g>
+                <g stroke-opacity="0.85">
+                    ${majorLines.join('')}
+                    ${edgeTicks.join('')}
+                    <rect x="${margin}" y="${margin}" width="${Math.max(0, width - margin * 2)}" height="${Math.max(0, height - margin * 2)}"/>
+                </g>
+                <g stroke-opacity="0.4" stroke-dasharray="5 5">${guidePaths.join('')}</g>
             </g>
         `;
     }
