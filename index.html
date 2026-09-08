@@ -65,9 +65,9 @@
 
         :root {
             --active-bg-color: #091A12;
-            --play-halo-size: 72px;
-            --play-halo-darkness: 0.66;
-            --play-halo-blur: 30px;
+            --play-halo-size: 56px;
+            --play-halo-darkness: 0.48;
+            --play-halo-blur: 24px;
             --resume-font-size: 11.5px;
             --resume-font-weight: 500;
             --resume-letter-spacing: 0.2px;
@@ -2114,17 +2114,18 @@
             border: 0;
             color: #f4efe6;
             background:
-                radial-gradient(circle at 72% 18%, rgba(255, 224, 183, 0.28), transparent 54%),
-                linear-gradient(180deg, #e4ddd0 0%, #6f675c 100%);
+                radial-gradient(ellipse at 32% 8%, rgba(255, 248, 226, 0.24), transparent 64%),
+                linear-gradient(155deg, #77796d 0%, #505449 48%, #30352e 100%);
             background-clip: padding-box;
             backdrop-filter: none;
             -webkit-backdrop-filter: none;
             box-shadow:
-                inset 0 1px 0 rgba(255, 255, 255, 0.42),
-                inset 0 -5px 10px rgba(0, 0, 0, 0.22),
-                0 0 0 1px rgba(0, 0, 0, 0.28),
-                -10px 14px 22px rgba(0, 0, 0, 0.34),
-                -4px 6px 10px rgba(0, 0, 0, 0.22);
+                inset 0 1px 0 rgba(255, 255, 244, 0.48),
+                inset 1px 0 0 rgba(255, 255, 244, 0.12),
+                inset 0 -2px 3px rgba(0, 0, 0, 0.22),
+                0 0 0 1px rgba(12, 16, 12, 0.38),
+                0 3px 5px rgba(0, 0, 0, 0.24),
+                0 10px 20px rgba(0, 0, 0, 0.24);
             transition:
                 opacity 0.3s ease,
                 background 0.22s ease,
@@ -2134,28 +2135,29 @@
         .video-frame .play-overlay-btn:hover,
         .landing-video-frame .play-overlay-btn:hover {
             background:
-                radial-gradient(circle at 72% 18%, rgba(255, 224, 183, 0.34), transparent 56%),
-                linear-gradient(180deg, #eee8db 0%, #7a7266 100%);
+                radial-gradient(ellipse at 32% 8%, rgba(255, 248, 226, 0.3), transparent 64%),
+                linear-gradient(155deg, #848678 0%, #5b5f52 48%, #373d33 100%);
             transform: translate(-50%, -50%);
             box-shadow:
-                inset 0 1px 0 rgba(255, 255, 255, 0.5),
-                inset 0 -5px 10px rgba(0, 0, 0, 0.18),
-                0 0 0 1px rgba(0, 0, 0, 0.28),
-                -12px 16px 26px rgba(0, 0, 0, 0.36),
-                -5px 8px 12px rgba(0, 0, 0, 0.24);
+                inset 0 1px 0 rgba(255, 255, 244, 0.56),
+                inset 1px 0 0 rgba(255, 255, 244, 0.16),
+                inset 0 -2px 3px rgba(0, 0, 0, 0.18),
+                0 0 0 1px rgba(12, 16, 12, 0.38),
+                0 4px 6px rgba(0, 0, 0, 0.24),
+                0 12px 24px rgba(0, 0, 0, 0.26);
         }
 
         .video-frame .play-overlay-btn:active,
         .landing-video-frame .play-overlay-btn:active {
             background:
-                radial-gradient(circle at 72% 18%, rgba(255, 224, 183, 0.1), transparent 50%),
-                linear-gradient(180deg, #b8b0a2 0%, #4d473e 100%);
+                radial-gradient(ellipse at 40% 90%, rgba(255, 248, 226, 0.08), transparent 60%),
+                linear-gradient(155deg, #3c4137 0%, #474c40 100%);
             transform: translate(-50%, -50%);
             box-shadow:
-                inset 0 3px 8px rgba(0, 0, 0, 0.32),
-                inset 0 1px 0 rgba(255, 255, 255, 0.12),
-                0 0 0 1px rgba(0, 0, 0, 0.28),
-                -3px 4px 8px rgba(0, 0, 0, 0.22);
+                inset 0 3px 7px rgba(0, 0, 0, 0.38),
+                inset 0 -1px 0 rgba(255, 255, 244, 0.2),
+                0 0 0 1px rgba(12, 16, 12, 0.4),
+                0 2px 4px rgba(0, 0, 0, 0.2);
             transition-duration: 0.08s;
         }
 
