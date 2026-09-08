@@ -259,8 +259,7 @@
         body.desktop-fullscreen-mode .control-bar,
         body.desktop-fullscreen-mode .content-info-left,
         body.desktop-fullscreen-mode .content-info-right,
-        body.desktop-fullscreen-mode .landing-profile-info,
-        body.desktop-fullscreen-mode .landing-sticker {
+        body.desktop-fullscreen-mode .landing-profile-info {
             opacity: 0 !important;
             visibility: hidden !important;
             pointer-events: none !important;
@@ -393,8 +392,7 @@
                 transition: opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
             }
 
-            body.desktop-immersive-mode .landing-profile-info,
-            body.desktop-immersive-mode .landing-sticker {
+            body.desktop-immersive-mode .landing-profile-info {
                 opacity: 0.08 !important;
                 transition: opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
             }
@@ -1014,57 +1012,6 @@
             border-radius: 0 0 12px 12px;
         }
 
-
-        /* Decorative stickers */
-        .sticker {
-            position: absolute;
-            opacity: 0;
-            transform: scale(0.5);
-            transition: opacity 0.5s ease-in-out 0.1s, transform 0.5s ease-in-out 0.1s;
-            pointer-events: none;
-        }
-
-        .video-section.active .sticker {
-            opacity: 1;
-            transform: scale(1);
-        }
-
-        /* Heart sticker - responsive positioning */
-        .sticker-heart {
-            top: 15%;
-            right: calc(50% - min(280px, 25vw));
-            font-size: clamp(32px, 5vw, 48px);
-        }
-
-        /* Star sticker - responsive positioning */
-        .sticker-star {
-            top: 20%;
-            left: calc(50% - min(300px, 27vw));
-            width: clamp(50px, 7vw, 80px);
-            height: clamp(50px, 7vw, 80px);
-        }
-
-        /* Plus sticker - responsive positioning */
-        .sticker-plus {
-            bottom: 35%;
-            left: calc(50% - min(250px, 22vw));
-            font-size: clamp(28px, 4vw, 40px);
-            color: #f0a0d0;
-        }
-
-        /* Sparkle sticker - responsive positioning */
-        .sticker-sparkle {
-            bottom: 40%;
-            right: calc(50% - min(280px, 25vw));
-            font-size: clamp(22px, 3.5vw, 32px);
-        }
-
-        /* Squiggle sticker - responsive positioning */
-        .sticker-squiggle {
-            bottom: 15%;
-            left: calc(50% - min(280px, 25vw));
-            width: clamp(40px, 5vw, 60px);
-        }
 
         /* Info bars on the sides - responsive positioning */
         .info-bar {
@@ -2043,8 +1990,7 @@
 
         @media (max-width: 1024px) {
 
-            .info-bar,
-            .sticker {
+            .info-bar {
                 display: none;
             }
         }
@@ -2631,43 +2577,6 @@
             display: none;
         }
 
-        /* Landing Decorative Stickers */
-        .landing-sticker {
-            position: absolute;
-            pointer-events: none;
-            z-index: 6;
-            /* Stickers stay in place, but can have a subtle rotation if desired or none at all */
-            animation: none;
-        }
-
-        .landing-sticker.heart {
-            color: #ff6b9d;
-        }
-
-        .landing-sticker.star {
-            color: #5b8dd9;
-        }
-
-        .landing-sticker.plus {
-            color: #d989b5;
-        }
-
-        .landing-sticker.sparkle {
-            color: #ff8fb1;
-        }
-
-        @keyframes float-sticker {
-
-            0%,
-            100% {
-                transform: rotate(0deg);
-            }
-
-            50% {
-                transform: rotate(3deg);
-            }
-        }
-
         /* Mobile Bottom Navigation — hidden by default, shown at <=600px */
         .mobile-bottom-nav {
             display: none;
@@ -2881,9 +2790,7 @@
 
             /* Hide desktop-only decorative elements */
             .content-info-right,
-            .info-bar,
-            .sticker,
-            .landing-sticker {
+            .info-bar {
                 display: none !important;
             }
 
@@ -3936,14 +3843,6 @@
             document.documentElement.style.setProperty('--active-bg-color', color);
         }
 
-        // Keep experiment-controller color changes synchronized with adaptive controls.
-        if (bgLayer) {
-            new MutationObserver(() => {
-                const color = bgLayer.style.backgroundColor;
-                if (color) document.documentElement.style.setProperty('--active-bg-color', color);
-            }).observe(bgLayer, { attributes: true, attributeFilter: ['style'] });
-        }
-
         // --- First-party analytics (session + events, no third-party cookies) ---
         const _analyticsWorkerUrl = 'https://reelsfolio-likes.vibhoresinghal.workers.dev';
         const _watchState = {
@@ -4920,20 +4819,6 @@
             syncMutePulse();
         }
 
-        // --- Seekbar: click/drag to seek ---
-        function seekVideo(event, videoId) {
-            event.stopPropagation();
-            const video = document.getElementById(videoId);
-            const bar = event.currentTarget.closest('.video-seekbar');
-            const track = bar ? bar.querySelector('.video-seekbar-track') : null;
-            if (!video || !video.duration || !track) return;
-
-            const rect = track.getBoundingClientRect();
-            const x = (event.clientX || event.touches?.[0]?.clientX || 0) - rect.left;
-            const pct = Math.max(0, Math.min(1, x / rect.width));
-            video.currentTime = pct * video.duration;
-        }
-
         // Unified drag-to-seek for mouse and touch
         (function initSeekbarDrag() {
             let activeBar = null;
@@ -5524,12 +5409,6 @@
             soundBtn.classList.toggle('pulsing', isMuted && isCurrentVideoPlaying());
         }
 
-        function stopUnmutePulse() {
-            const soundBtn = document.getElementById('soundBtn');
-            if (soundBtn) soundBtn.classList.remove('pulsing');
-            hideMuteIndicator();
-        }
-
         function initSoundHint() {
             setTimeout(() => {
                 if (isMuted && isCurrentVideoPlaying()) {
@@ -5985,10 +5864,6 @@
         });
 
         // Scroll to first video from landing section
-        function scrollToFirstVideo() {
-            scrollToCategory('zeta');
-        }
-
         // --- Navigation Functions (Simplified for single-page scroll) ---
 
         // Handle tab button clicks - switch grid panel if in grid mode, otherwise scroll
@@ -6089,19 +5964,6 @@
                 // Update like button for target section immediately
                 const videoId = section.getAttribute('data-video-id');
                 if (videoId) updateLikeButtonForCurrentVideo(videoId, false, true);
-            }
-        }
-
-        // Scroll to a specific video by index within the main container
-        function scrollToVideoByIndex(index) {
-            const container = document.getElementById('mainScrollContainer');
-            if (!container) return;
-
-            const sections = container.querySelectorAll('.landing-section, .video-section');
-            if (sections[index]) {
-                const targetTop = index * getSectionHeight();
-                const targetColor = sections[index].getAttribute('data-bg-color');
-                smartScrollTo(targetTop, container, targetColor);
             }
         }
 
