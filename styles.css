@@ -2078,7 +2078,29 @@
             overflow: visible;
         }
 
+        /* Hide static controls from the first paint, including while scripts/data
+           load. ID specificity also wins over mobile visibility overrides. */
+        body.intro-pending :is(#fixedNavArrows, #navbarWrapper, #mobileBottomNav, .control-bar) {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            transition: none !important;
+        }
+
         @media (prefers-reduced-motion: no-preference) {
+            body.intro-pending .bg-layer {
+                opacity: 0;
+            }
+
+            body.intro-ready .bg-layer {
+                animation: intro-background-reveal 1.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+            }
+
+            @keyframes intro-background-reveal {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+
             body.intro-pending .landing-video-shell,
             body.intro-pending .landing-bio,
             body.intro-pending .landing-name,

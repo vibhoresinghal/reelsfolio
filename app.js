@@ -306,7 +306,7 @@
                 // reliably be reused by the media element.
 
                 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-                if (!reduceMotion) document.body.classList.add('intro-pending');
+                // The HTML starts in intro-pending, before scripts or data arrive.
                 renderApp();
                 initLikeButton(); // Initialize like button state
                 initSoundHint(); // Show 'Tap for sound' hint on first visit
@@ -321,6 +321,8 @@
                             window.setTimeout(() => document.body.classList.remove('intro-ready'), 1600);
                         });
                     });
+                } else {
+                    document.body.classList.remove('intro-pending');
                 }
             } catch (error) {
                 console.error('Failed to load videos:', error);
