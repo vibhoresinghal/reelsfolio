@@ -2760,6 +2760,15 @@
             }
 
             /* Mobile glass: directional edge light instead of a uniform outline. */
+            /* Keep the parent transparent to backdrop sampling; fade each button. */
+            .video-nav-arrows {
+                display: flex !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+                pointer-events: none !important;
+                transition: none !important;
+            }
+
             .video-nav-arrows .nav-arrow-btn {
                 position: relative;
                 isolation: isolate;
@@ -2833,14 +2842,37 @@
 
             .video-nav-arrows .nav-arrow-btn:last-child { margin-bottom: 0; }
 
-            .video-nav-arrows .nav-arrow-btn:active {
-                transform: translateY(1px) scale(0.94);
+            .video-nav-arrows .nav-arrow-btn:active,
+            .video-nav-arrows .nav-arrow-btn.like-btn.liked:active {
+                transform: translateY(2px) scale(0.94);
                 transition-duration: 0.09s;
-                background: linear-gradient(155deg, rgba(255, 239, 218, 0.07), rgba(18, 14, 12, 0.36));
+                background:
+                    radial-gradient(ellipse at 50% 100%, rgba(255, 230, 198, 0.08), transparent 65%),
+                    linear-gradient(165deg, rgba(8, 7, 6, 0.62), rgba(20, 16, 14, 0.48));
                 box-shadow:
-                    inset 0 2px 6px rgba(0, 0, 0, 0.25),
-                    inset 0 1px 1px rgba(255, 242, 223, 0.08),
-                    0 2px 5px rgba(0, 0, 0, 0.2);
+                    inset 0 3px 7px rgba(0, 0, 0, 0.55),
+                    inset 0 1px 2px rgba(0, 0, 0, 0.38),
+                    inset 0 -1px 1px rgba(255, 235, 207, 0.14),
+                    0 1px 2px rgba(0, 0, 0, 0.20);
+            }
+
+            .video-nav-arrows .nav-arrow-btn.like-btn.liked:active {
+                background:
+                    radial-gradient(ellipse at 50% 100%, rgba(255, 183, 204, 0.07), transparent 65%),
+                    linear-gradient(165deg, rgba(28, 10, 19, 0.72), rgba(30, 15, 23, 0.56));
+            }
+
+            .video-nav-arrows .nav-arrow-btn:active::before {
+                background: linear-gradient(145deg,
+                    rgba(0, 0, 0, 0.48) 0%,
+                    rgba(0, 0, 0, 0.26) 30%,
+                    rgba(255, 235, 207, 0.04) 52%,
+                    rgba(255, 235, 207, 0.18) 76%,
+                    rgba(255, 235, 207, 0.40) 100%);
+            }
+
+            .video-nav-arrows .nav-arrow-btn:active svg {
+                filter: drop-shadow(0 1px 0 rgba(255, 235, 207, 0.10));
             }
 
             .video-nav-arrows .nav-arrow-btn:focus-visible {
@@ -2853,7 +2885,8 @@
                 .video-nav-arrows .nav-arrow-btn.like-btn {
                     transition: opacity 0.15s ease;
                 }
-                .video-nav-arrows .nav-arrow-btn:active { transform: none; }
+                .video-nav-arrows .nav-arrow-btn:active,
+                .video-nav-arrows .nav-arrow-btn.like-btn.liked:active { transform: none; }
             }
 
             /* --- Info Panel (Instagram-style bottom sheet) --- */
@@ -3076,14 +3109,13 @@
                 display: none !important;
             }
 
-            body:not(.mobile-immersive-mode) .video-nav-arrows {
-                display: flex !important;
+            body:not(.mobile-immersive-mode) .video-nav-arrows .nav-arrow-btn {
                 opacity: 1 !important;
                 visibility: visible !important;
                 pointer-events: auto !important;
             }
 
-            .video-nav-arrows,
+            .video-nav-arrows .nav-arrow-btn,
             .video-section .content-info-left,
             .landing-profile-info {
                 transition:
@@ -3092,7 +3124,7 @@
             }
 
             /* Playing mobile state: leave only the video and seek bar visible. */
-            body.mobile-immersive-mode .video-nav-arrows,
+            body.mobile-immersive-mode .video-nav-arrows .nav-arrow-btn,
             body.mobile-immersive-mode .video-section .content-info-left,
             body.mobile-immersive-mode .landing-profile-info {
                 opacity: 0 !important;
@@ -3101,7 +3133,7 @@
             }
 
             /* A tap reveals playback controls without pausing the video. */
-            body.mobile-immersive-mode.mobile-controls-visible .video-nav-arrows,
+            body.mobile-immersive-mode.mobile-controls-visible .video-nav-arrows .nav-arrow-btn,
             body.mobile-immersive-mode.mobile-controls-visible .video-section.active .content-info-left,
             body.mobile-immersive-mode.mobile-controls-visible .landing-section.active .landing-profile-info {
                 opacity: 1 !important;
@@ -3160,6 +3192,30 @@
             body.info-panel-open .info-panel-active .video-seekbar {
                 visibility: hidden !important;
                 pointer-events: none !important;
+            }
+
+            body.info-panel-controls-returning .video-nav-arrows .nav-arrow-btn,
+            body.info-panel-controls-returning .video-section.active .play-overlay-btn,
+            body.info-panel-controls-returning .landing-section.active .play-overlay-btn {
+                transition: opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+                    visibility 0s !important;
+            }
+
+            body.info-panel-controls-returning.info-panel-controls-pending .video-nav-arrows .nav-arrow-btn,
+            body.info-panel-controls-returning.info-panel-controls-pending .video-section.active .play-overlay-btn,
+            body.info-panel-controls-returning.info-panel-controls-pending .landing-section.active .play-overlay-btn {
+                opacity: 0 !important;
+                visibility: hidden !important;
+                pointer-events: none !important;
+                transition: none !important;
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                body.info-panel-controls-returning .video-nav-arrows .nav-arrow-btn,
+                body.info-panel-controls-returning .video-section.active .play-overlay-btn,
+                body.info-panel-controls-returning .landing-section.active .play-overlay-btn {
+                    transition: none !important;
+                }
             }
 
             body.mobile-immersive-mode .play-overlay-btn > svg.play-overlay-icon {
@@ -4320,6 +4376,7 @@
 
             currentVideoId = videoId;
             isPlaying = true;
+            video._playbackBlocked = false;
 
             // Update icons
             document.getElementById('pauseIcon').style.display = 'block';
@@ -4331,7 +4388,9 @@
             if (video.readyState < 3) showBufferingSoon(video);
             video.play().catch(e => {
                 console.log('Autoplay blocked:', e);
+                video._playbackBlocked = true;
                 hideBuffering(video);
+                scheduleMobileImmersiveSync();
             });
 
             if (isMuted) showMuteIndicator(); else hideMuteIndicator();
@@ -4923,7 +4982,11 @@
 
             const video = getActiveVideoForFullscreen();
             const isActivelyPlaying = !!video && !video.paused && !video.ended;
-            document.body.classList.toggle('mobile-immersive-mode', isActivelyPlaying);
+            // Navigation briefly pauses media while playback is still intended.
+            // Preserve immersive mode through that gap, but allow pause/error UI.
+            const isAwaitingPlayback = !!video && hasStartedExperience && isPlaying &&
+                !video.ended && !video.error && !video._playbackBlocked;
+            document.body.classList.toggle('mobile-immersive-mode', isActivelyPlaying || isAwaitingPlayback);
             if (mobileNavigationControlsTarget && video?.id === mobileNavigationControlsTarget && isActivelyPlaying) {
                 mobileNavigationControlsTarget = null;
                 showMobilePlaybackControls();
@@ -4935,6 +4998,7 @@
         document.addEventListener('playing', scheduleMobileImmersiveSync, true);
         document.addEventListener('pause', scheduleMobileImmersiveSync, true);
         document.addEventListener('ended', scheduleMobileImmersiveSync, true);
+        document.addEventListener('error', scheduleMobileImmersiveSync, true);
         document.addEventListener('scroll', scheduleMobileImmersiveSync, { passive: true, capture: true });
         window.addEventListener('resize', scheduleMobileImmersiveSync, { passive: true });
         syncMobileImmersiveMode();
@@ -6110,6 +6174,7 @@
             document.addEventListener('pause', syncPanelPlayback, true);
 
             let _open = false;
+            let controlsRevealTimer = null;
             let _sheetRatio = 0;      // current fraction
             let _activeSection = null;
             let _activeFrame = null;
@@ -6258,6 +6323,8 @@
                 if (_open || document.body.classList.contains('info-panel-open') || window.innerWidth > 600) return;
                 const { section, frame } = getVideoFrame();
                 if (!section || !frame) return;
+                clearTimeout(controlsRevealTimer);
+                document.body.classList.remove('info-panel-controls-returning', 'info-panel-controls-pending');
                 _open = true;
                 _activeSection = section;
                 _activeFrame = frame;
@@ -6271,9 +6338,7 @@
                 document.body.classList.add('info-panel-open');
 
                 // Hide side UI while panel is open
-                const navArrows = document.getElementById('fixedNavArrows');
                 const mobileNav = document.getElementById('mobileBottomNav');
-                if (navArrows) gsap.to(navArrows, { opacity: 0, duration: 0.25, onComplete: () => { navArrows.style.pointerEvents = 'none'; } });
                 if (mobileNav) gsap.to(mobileNav, { opacity: 0, duration: 0.25, onComplete: () => { mobileNav.style.pointerEvents = 'none'; } });
 
                 // Hide all video overlays (descriptions, seekbar, profile info)
@@ -6325,9 +6390,18 @@
                     overwrite: true,
                     onComplete: () => {
                         sheet.classList.remove('visible');
+                        document.body.classList.add('info-panel-controls-returning', 'info-panel-controls-pending');
                         document.body.classList.remove('info-panel-open');
                         showMobilePlaybackControls();
-                        (returnFocus?.isConnected && returnFocus !== document.body ? returnFocus : trigger).focus({ preventScroll: true });
+                        // Paint the restored controls hidden before beginning their fade.
+                        requestAnimationFrame(() => requestAnimationFrame(() => {
+                            if (_open) return;
+                            document.body.classList.remove('info-panel-controls-pending');
+                            (returnFocus?.isConnected && returnFocus !== document.body ? returnFocus : trigger).focus({ preventScroll: true });
+                            controlsRevealTimer = setTimeout(() => {
+                                document.body.classList.remove('info-panel-controls-returning');
+                            }, panelDuration(400));
+                        }));
                     }
                 });
 
@@ -6352,9 +6426,7 @@
                 }
 
                 // Restore UI
-                const navArrows = document.getElementById('fixedNavArrows');
                 const mobileNav = document.getElementById('mobileBottomNav');
-                if (navArrows) { navArrows.style.pointerEvents = ''; gsap.to(navArrows, { opacity: 1, duration: 0.25 }); }
                 if (mobileNav) { mobileNav.style.pointerEvents = ''; gsap.to(mobileNav, { opacity: 1, duration: 0.25 }); }
 
                 if (closingSection) {
