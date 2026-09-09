@@ -1751,6 +1751,7 @@
             color: rgba(255, 255, 255, 0.75);
             font-size: clamp(13px, 1.3vw, 16px);
             line-height: 1.5;
+            white-space: pre-line;
             margin-bottom: clamp(12px, 2vh, 20px);
             font-weight: 400;
         }
@@ -1776,42 +1777,30 @@
             overflow: hidden;
             display: inline-flex;
             align-items: center;
-            gap: 7px;
-            background:
-                linear-gradient(
-                    180deg,
-                    color-mix(in srgb, var(--active-bg-color) 78%, #080605) 0%,
-                    color-mix(in srgb, var(--active-bg-color) 52%, #1a1410) 100%
-                );
-            border: 1px solid rgba(0, 0, 0, 0.28);
-            padding: 7px 10px;
+            gap: 5px;
+            background: linear-gradient(
+                180deg,
+                color-mix(in srgb, var(--active-bg-color) 82%, #080b08),
+                color-mix(in srgb, var(--active-bg-color) 76%, #20231c)
+            );
+            border: 0;
+            padding: 5px 8px;
             border-radius: 999px;
-            color: rgba(255, 255, 255, 0.78);
-            font-size: clamp(11px, 1vw, 13px);
-            font-weight: 550;
+            color: #b5b8aa;
+            font-size: clamp(11px, 0.9vw, 12px);
+            font-weight: 400;
             line-height: 1;
             letter-spacing: 0.01em;
             box-shadow:
-                inset 0 4px 8px rgba(0, 0, 0, 0.42),
-                inset 0 1px 0 rgba(0, 0, 0, 0.35),
-                inset 0 -1px 0 rgba(255, 255, 255, 0.08);
-        }
-
-        .location-tag::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            z-index: -1;
-            pointer-events: none;
-            background:
-                radial-gradient(ellipse at 50% 100%, rgba(255, 255, 255, 0.05), transparent 52%),
-                linear-gradient(180deg, rgba(0, 0, 0, 0.18), transparent 46%);
+                inset 0 1px 3px rgba(0, 0, 0, 0.28),
+                inset 0 -1px 0 rgba(185, 194, 166, 0.045);
         }
 
         .location-tag svg {
-            width: 13px;
-            height: 13px;
-            opacity: 0.72;
+            width: 11px;
+            height: 11px;
+            opacity: 1;
+            color: #8c9787;
         }
 
         .landing-actions {
@@ -3270,6 +3259,45 @@
             }
         }
 
+        @media (max-width: 600px) {
+            #mobilePreviewRetry {
+                position: fixed;
+                inset: 50% auto auto 50%;
+                transform: translate(-50%, -50%);
+                z-index: 11000;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 12px;
+            }
+            #mobilePreviewRetry[hidden] { display: none !important; }
+            #mobilePreviewRetry button {
+                width: 56px;
+                height: 56px;
+                padding: 0;
+                display: grid;
+                place-items: center;
+                border: 0;
+                border-radius: 50%;
+                color: #f4efe6;
+                background: radial-gradient(ellipse at 32% 8%, #fff8e23d, transparent 64%), linear-gradient(155deg, #77796d, #505449 48%, #30352e);
+                box-shadow: inset 0 1px 0 #fffff47a, inset 0 -2px 3px #0004, 0 3px 5px #0004, 0 10px 20px #0004;
+                cursor: pointer;
+                touch-action: manipulation;
+            }
+            #mobilePreviewRetry button:active { box-shadow: inset 0 3px 7px #0006, 0 2px 4px #0003; }
+            #mobilePreviewRetry button:focus-visible { outline: 2px solid #f4efe6; outline-offset: 5px; }
+            #mobilePreviewRetry svg { width: 22px; height: 22px; margin-left: 1px; }
+            #mobilePreviewRetry span { color: #f4efe6; font: 12px/1.4 Inter, sans-serif; }
+            #mobilePreviewRetry span:empty { display: none; }
+            body.mobile-preview-fallback .grid-loading-highlight { opacity: 0 !important; animation: none !important; }
+            body.mobile-preview-fallback .grid-loading-band { animation-play-state: paused !important; }
+            body.mobile-preview-fallback .video-nav-arrows { visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
+            body.mobile-preview-fallback .video-nav-arrows .nav-arrow-btn { visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
+            body.info-panel-open #mobilePreviewRetry { display: none !important; }
+        }
+        @media (min-width: 601px) { #mobilePreviewRetry { display: none !important; } }
+
         /* Reveal the real video and its play control once a frame is decoded. */
         .video-frame:not(.has-first-frame) video,
         .landing-video-frame:not(.has-first-frame) video,
@@ -3796,6 +3824,7 @@
                 initMobileFirstReelNudge();
                 initDesktopMuteHover();
                 initBufferingIndicators();
+                initMobilePreviewRecovery();
                 const initialVideos = [...document.querySelectorAll('.video-section video, .landing-section video')];
                 const container = document.getElementById('mainScrollContainer');
                 let revealScheduled = false;
@@ -3811,6 +3840,7 @@
                         initialVideos.forEach(item => {
                             item.removeEventListener('loadeddata', revealInitialMedia);
                             item.removeEventListener('seeked', revealInitialMedia);
+                            item.removeEventListener('mobilepreviewready', revealInitialMedia);
                         });
                         container?.removeEventListener('scroll', revealInitialMedia);
                         document.body.classList.remove('initial-media-pending', 'intro-pending');
@@ -3823,6 +3853,7 @@
                 initialVideos.forEach(video => {
                     video.addEventListener('loadeddata', revealInitialMedia);
                     video.addEventListener('seeked', revealInitialMedia);
+                    if (window.matchMedia('(max-width: 600px)').matches) video.addEventListener('mobilepreviewready', revealInitialMedia);
                 });
                 container?.addEventListener('scroll', revealInitialMedia, { passive: true });
                 revealInitialMedia();
@@ -4382,6 +4413,118 @@
 
         function initBufferingIndicators() {
             document.querySelectorAll('.video-section video, .landing-section video').forEach(bindBufferingIndicator);
+        }
+
+        // Mobile-only recovery: desktop retains its existing preview path.
+        function initMobilePreviewRecovery() {
+            const mobile = window.matchMedia('(max-width: 600px)');
+            if (!mobile.matches || document.getElementById('mobilePreviewRetry')) return;
+            const fallback = document.createElement('div');
+            fallback.id = 'mobilePreviewRetry';
+            fallback.hidden = true;
+            fallback.innerHTML = '<button type="button" aria-label="Play video with sound"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 4.5a1.5 1.5 0 0 1 2.25-1.3l12 7a1.5 1.5 0 0 1 0 2.6l-12 7A1.5 1.5 0 0 1 6 18.5Z"/></svg></button><span role="status"></span>';
+            document.body.append(fallback);
+            const button = fallback.querySelector('button');
+            const status = fallback.querySelector('span');
+            const states = new WeakMap();
+            let current = null, priming = null;
+            const activeVideo = () => {
+                const id = getCurrentVideoId();
+                return document.getElementById(id === 'landing' ? 'landing-video' : id);
+            };
+            const usable = video => video && video.readyState >= 2 && !video.seeking && !video.error;
+            function hideFallback() {
+                fallback.hidden = true;
+                document.body.classList.remove('mobile-preview-fallback');
+            }
+            function stopPrime() {
+                if (!priming) return;
+                const task = priming;
+                priming = null;
+                clearTimeout(task.timeout);
+                if (task.frameCallback != null && task.video.cancelVideoFrameCallback) task.video.cancelVideoFrameCallback(task.frameCallback);
+                // Never pause or remute playback that the visitor has taken over.
+                if (!hasStartedExperience) task.video.pause();
+            }
+            function ready(video) {
+                if (!usable(video)) return false;
+                getVideoFrame(video)?.classList.add('has-first-frame', 'loaded');
+                video.dispatchEvent(new Event('mobilepreviewready'));
+                if (current === video) hideFallback();
+                return true;
+            }
+            function prime(video, state) {
+                state.attempted = true;
+                if (hasStartedExperience || video.error) return;
+                const task = { video, timeout: null, frameCallback: null };
+                priming = task;
+                video.muted = true;
+                video.preload = 'auto';
+                // Retry a pre-existing metadata-only/stalled request once, not on every scroll tick.
+                if (video.readyState < 2 || video.seeking) video.load();
+                const finish = () => {
+                    if (priming !== task) return;
+                    stopPrime();
+                    ready(video);
+                };
+                task.timeout = setTimeout(finish, 1500);
+                try {
+                    const play = video.play();
+                    Promise.resolve(play).then(() => {
+                        if (priming !== task) {
+                            if (!hasStartedExperience) video.pause();
+                            return;
+                        }
+                        if (video.requestVideoFrameCallback) task.frameCallback = video.requestVideoFrameCallback(finish);
+                        else { clearTimeout(task.timeout); task.timeout = setTimeout(finish, 120); }
+                    }).catch(() => { if (priming === task) stopPrime(); });
+                } catch (_) { stopPrime(); }
+            }
+            function tick() {
+                if (!mobile.matches || document.hidden) { stopPrime(); hideFallback(); current = null; return; }
+                const video = activeVideo();
+                if (!video) { stopPrime(); hideFallback(); current = null; return; }
+                if (video !== current) {
+                    stopPrime(); hideFallback(); current = video;
+                    let state = states.get(video);
+                    if (!state) { state = { attempted: false }; states.set(video,state); }
+                    state.since = Date.now();
+                    state.retrying = false;
+                    if (!video.getAttribute('src') && video.dataset.src) { video.src = video.dataset.src; video.preload = 'auto'; video.load(); }
+                }
+                const state = states.get(video);
+                if (usable(video)) {
+                    if (!priming) ready(video);
+                    return;
+                }
+                const elapsed = Date.now() - state.since;
+                if (!state.attempted && !hasStartedExperience && elapsed >= 1200) prime(video,state);
+                if (elapsed >= 4000 && !document.body.classList.contains('info-panel-open')) {
+                    fallback.hidden = false;
+                    document.body.classList.add('mobile-preview-fallback');
+                    button.setAttribute('aria-label', video.error || state.retrying ? 'Retry video playback' : 'Play video with sound');
+                    status.textContent = video.error || state.retrying ? 'Tap to retry' : '';
+                } else hideFallback();
+            }
+            button.addEventListener('click', event => {
+                event.stopPropagation();
+                const video = activeVideo();
+                if (!video || video !== current) return;
+                stopPrime();
+                const state = states.get(video);
+                state.retrying = true;
+                state.since = Date.now();
+                hideFallback();
+                video.preload = 'auto';
+                if (video.error || video.readyState < 2 || video.seeking) video.load();
+                // Keep play() in the user's click stack for Safari's gesture permission.
+                if (!hasStartedExperience) startExperienceWithSound(video.id);
+                else playVideo(video.id);
+            });
+            document.addEventListener('visibilitychange', tick);
+            mobile.addEventListener('change', tick);
+            setInterval(tick, 250);
+            tick();
         }
 
         function prepareVideoFirstFrame(video) {
