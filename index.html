@@ -3298,6 +3298,24 @@
         }
         @media (min-width: 601px) { #mobilePreviewRetry { display: none !important; } }
 
+        @media (max-width: 600px) {
+            body.mobile-media-revealing #fixedNavArrows .nav-arrow-btn,
+            body.mobile-media-revealing #mainScrollContainer .play-overlay-btn {
+                transition:
+                    opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+                    visibility 0s,
+                    height 0.48s cubic-bezier(0.22, 1, 0.36, 1),
+                    margin-bottom 0.48s cubic-bezier(0.22, 1, 0.36, 1),
+                    transform 0.24s ease,
+                    box-shadow 0.18s ease !important;
+            }
+            body.mobile-media-entering #fixedNavArrows .nav-arrow-btn,
+            body.mobile-media-entering #mainScrollContainer .play-overlay-btn {
+                opacity: 0 !important;
+                pointer-events: none !important;
+            }
+        }
+
         /* Reveal the real video and its play control once a frame is decoded. */
         .video-frame:not(.has-first-frame) video,
         .landing-video-frame:not(.has-first-frame) video,
@@ -3843,6 +3861,7 @@
                             item.removeEventListener('mobilepreviewready', revealInitialMedia);
                         });
                         container?.removeEventListener('scroll', revealInitialMedia);
+                        if (window.matchMedia('(max-width: 600px)').matches) beginMobileMediaReveal();
                         document.body.classList.remove('initial-media-pending', 'intro-pending');
                         if (!reduceMotion) {
                             document.body.classList.add('intro-ready');
@@ -4415,6 +4434,16 @@
             document.querySelectorAll('.video-section video, .landing-section video').forEach(bindBufferingIndicator);
         }
 
+        function beginMobileMediaReveal() {
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+                document.body.classList.contains('mobile-media-revealing')) return;
+            document.body.classList.add('mobile-media-revealing', 'mobile-media-entering');
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                document.body.classList.remove('mobile-media-entering');
+                setTimeout(() => document.body.classList.remove('mobile-media-revealing'), 550);
+            }));
+        }
+
         // Mobile-only recovery: desktop retains its existing preview path.
         function initMobilePreviewRecovery() {
             const mobile = window.matchMedia('(max-width: 600px)');
@@ -4448,6 +4477,7 @@
             }
             function ready(video) {
                 if (!usable(video)) return false;
+                if (current === video && !fallback.hidden) beginMobileMediaReveal();
                 getVideoFrame(video)?.classList.add('has-first-frame', 'loaded');
                 video.dispatchEvent(new Event('mobilepreviewready'));
                 if (current === video) hideFallback();
