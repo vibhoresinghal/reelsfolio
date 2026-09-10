@@ -53,6 +53,19 @@
     opacity: 0;
     transition: opacity 240ms ease-out;
 }
+/* Radial light is painted on shared SVG strokes, never on the grid cells. */
+.grid-hover-highlight {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--grid-hover-fade-out, 440ms) cubic-bezier(0.22, 1, 0.36, 1);
+}
+.bg-grid-cutting-mat.is-pointer-over-grid .grid-hover-highlight {
+    opacity: var(--grid-hover-strength, 0.9);
+    transition-duration: var(--grid-hover-fade-in, 220ms);
+}
+@media (max-width: 600px), (hover: none), (pointer: coarse) {
+    .grid-hover-highlight { display: none; }
+}
 .grid-loading-band {
     animation: grid-loading-sweep 4.05s cubic-bezier(0.37, 0, 0.63, 1) 600ms infinite both;
     animation-play-state: paused;
@@ -74,6 +87,7 @@ body.initial-media-pending .grid-loading-band { animation-play-state: running; }
     .grid-loading-band { animation: none; transform: translate(calc(var(--grid-shimmer-travel-x) * 0.4), calc(var(--grid-shimmer-travel-y) * 0.4)); }
     body.initial-media-pending .grid-loading-highlight { animation: none; opacity: 0.18; }
     .grid-loading-highlight { transition: none; }
+    .bg-grid-cutting-mat .grid-hover-highlight { transition: none; }
 }
 
 .bg-light-texture { position: absolute; pointer-events: none; }
