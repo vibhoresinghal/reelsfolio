@@ -15,6 +15,7 @@
     <script defer src="background-runtime.js?v=grid-glow-1"></script>
     <script defer src="grid-glow-controls.js"></script>
     <script defer src="animation-visibility.js"></script>
+    <script defer src="volume-control.js"></script>
 
     <!-- Preconnect to external domains -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3354,6 +3355,7 @@
             transition: none !important;
         }
     </style>
+    <link rel="stylesheet" href="volume-control.css">
 </head>
 
 <body class="experience-awaiting-start initial-media-pending intro-pending">
@@ -3409,8 +3411,11 @@
             </svg>
         </button>
 
-        <!-- Sound Toggle Button -->
-        <button class="unmute-btn" id="soundBtn" onclick="toggleSound()" aria-label="Unmute video" title="Unmute">
+    </div>
+    <!-- Video controls: sound is anchored independently above the action stack. -->
+    <div class="video-nav-arrows" id="fixedNavArrows">
+      <div class="nav-arrow-btn volume-control" id="volumeControl" role="group" aria-label="Video sound">
+        <button class="volume-toggle" id="soundBtn" onclick="toggleSound()" aria-label="Unmute video" title="Unmute" type="button">
             <svg id="mutedIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                 <path
                     d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318 0-2.402.933H2.03c-.01 0-.01.015-.01.033v6.088c0 .018 0 .033.01.033h.076c.084.933 1.261.933 2.402.933h1.932l4.5 4.5c.945.945 2.56.276 2.56-1.06V4.06zM17.78 9.22a.75.75 0 10-1.06 1.06L18.44 12l-1.72 1.72a.75.75 0 101.06 1.06l1.72-1.72 1.72 1.72a.75.75 0 101.06-1.06L20.56 12l1.72-1.72a.75.75 0 10-1.06-1.06l-1.72 1.72-1.72-1.72z" />
@@ -3422,10 +3427,10 @@
             </svg>
             <span id="soundBtnText">Unmute</span>
         </button>
-
-    </div>
-    <!-- Fixed Navigation Arrows with Like Button -->
-    <div class="video-nav-arrows" id="fixedNavArrows">
+        <div class="volume-slider-wrap">
+            <input id="videoVolume" type="range" min="0" max="100" step="1" value="100" aria-label="Video volume" aria-valuetext="Muted" tabindex="-1">
+        </div>
+      </div>
         <button class="nav-arrow-btn like-btn" id="likeBtn" onclick="toggleLike()" aria-label="Like this video">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="likeIcon">
                 <defs>
@@ -3539,6 +3544,8 @@
         // State
         let videosData = null;
         let isMuted = true;
+        let playbackVolume = 1;
+        let lastAudibleVolume = 1;
         let userManuallyMuted = false; // True when user explicitly clicked mute button
         let isWarping = false; // Flag to prevent BG updates during warp
         let isPlaying = false;
@@ -5234,6 +5241,19 @@
         window.addEventListener('resize', scheduleMobileImmersiveSync, { passive: true });
         syncMobileImmersiveMode();
 
+        function setPlaybackVolume(value) {
+            playbackVolume = Math.max(0, Math.min(1, Number(value) || 0));
+            if (playbackVolume > 0) lastAudibleVolume = playbackVolume;
+            isMuted = playbackVolume === 0;
+            userManuallyMuted = isMuted;
+            document.querySelectorAll('video').forEach(video => {
+                video.volume = playbackVolume;
+                if (video.id === currentVideoId) video.muted = isMuted;
+            });
+            updateMuteUI();
+            if (isMuted) showMuteIndicator(); else hideMuteIndicator();
+        }
+
         function toggleSound() {
             isMuted = !isMuted;
             userManuallyMuted = isMuted;
@@ -5303,6 +5323,12 @@
         }
 
         function updateMuteUI() {
+            // Unmuting from zero restores the last audible setting.
+            if (!isMuted && playbackVolume === 0) playbackVolume = lastAudibleVolume;
+            document.querySelectorAll('video').forEach(video => {
+                if (video.volume !== playbackVolume) video.volume = playbackVolume;
+            });
+            window.dispatchEvent(new Event('reelsfolio:volumechange'));
             const mutedIcon = document.getElementById('mutedIcon');
             const unmutedIcon = document.getElementById('unmutedIcon');
             const btnText = document.getElementById('soundBtnText');
