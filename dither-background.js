@@ -2,18 +2,24 @@
 ((scope) => {
     'use strict';
     const STORAGE_KEY = 'reelfolio.dither.v2';
-    const ditherDefaults = Object.freeze({ ditherAmount: 100, tonalSteps: 5 });
-    const foliageDefaults = Object.freeze({ leafBlur: 11, windowBlur: 14, shadowDepth: 85,
-        treeSize: 95, treeX: 0, treeY: 0, windowAngle: -17, sway: 100 });
+    const ditherDefaults = Object.freeze({ ditherAmount: 100, tonalSteps: 5,
+        shadowDither: 35, shadowDensity: 32, shadowDotSize: 1, shadowSpeed: 18,
+        shadowSizeVariation: 20, shadowDensityVariation: 30, hoverStrength: 55, hoverRadius: 140,
+        hoverFollow: 90, clickStrength: 100, clickRadius: 260, clickDuration: 1400 });
+    const foliageDefaults = Object.freeze({ leafBlur: 9, windowBlur: 12, shadowDepth: 85,
+        treeSize: 99, treeX: 0, treeY: 0, windowAngle: -17, sway: 100 });
     const looks = Object.freeze({
         veil: { index: 0, label: 'Light veils', description: 'Long, softly folded light', settings: { scale: 65, distortion: 35, softness: 65, detail: 25, contrast: 50, direction: 25, speed: 72 } },
         drift: { index: 1, label: 'Soft drift', description: 'Quiet pools of diffused light', settings: { scale: 20, distortion: 43, softness: 75, detail: 20, contrast: 45, direction: 335, speed: 96 } },
         water: { index: 2, label: 'Water light', description: 'Intersecting ripples of light', settings: { scale: 55, distortion: 40, softness: 45, detail: 40, contrast: 55, direction: 20, speed: 20 } },
         contour: { index: 3, label: 'Contours', description: 'Slow, sculpted lines', settings: { scale: 60, distortion: 30, softness: 35, detail: 30, contrast: 50, direction: 315, speed: 18 } },
         fluid: { index: 4, label: 'Original fluid', description: 'The earlier cloudy treatment', settings: { scale: 50, distortion: 80, softness: 50, detail: 35, contrast: 70, direction: 0, speed: 30 } },
-        foliage: { index: 5, label: 'Foliage light', description: 'One dithered light across the window and leaves', settings: { scale: 50, distortion: 0, softness: 5, detail: 0, contrast: 72, direction: 0, speed: 41, ditherAmount: 72, tonalSteps: 3 } }
+        foliage: { index: 5, label: 'Foliage light', description: 'One dithered light across the window and leaves', settings: { scale: 50, distortion: 0, softness: 5, detail: 0, contrast: 72, direction: 0, speed: 41, ditherAmount: 88, tonalSteps: 3,
+            shadowDither: 28, shadowDensity: 18, shadowDotSize: 1, shadowSpeed: 44,
+            shadowSizeVariation: 96, shadowDensityVariation: 100, hoverStrength: 105, hoverRadius: 55,
+            hoverFollow: 100, clickStrength: 90, clickRadius: 160, clickDuration: 1400 } }
     });
-    const defaults = Object.freeze({ enabled: true, strength: 33, saturation: 250, matBrightness: 29, pixelSize: 2.5, grid: true, style: 'foliage', seed: 7, ...ditherDefaults, ...foliageDefaults, ...looks.foliage.settings });
+    const defaults = Object.freeze({ enabled: true, strength: 29, saturation: 250, matBrightness: 29, pixelSize: 2.5, grid: true, style: 'foliage', seed: 7, ...ditherDefaults, ...foliageDefaults, ...looks.foliage.settings });
     const foliageMask = 'assets/environment/olive-bough-mask.webp';
     function normalize(value) {
         const input = value && typeof value === 'object' ? value : {};
@@ -32,6 +38,12 @@
             softness: number('softness', 0, 100), detail: number('detail', 0, 100),
             contrast: number('contrast', 0, 100), direction: number('direction', 0, 360),
             ditherAmount: number('ditherAmount', 0, 100), tonalSteps: Math.round(number('tonalSteps', 2, 8)),
+            shadowDither: number('shadowDither', 0, 100), shadowDensity: number('shadowDensity', 0, 100),
+            shadowDotSize: Math.round(number('shadowDotSize', 1, 4)), shadowSpeed: number('shadowSpeed', 0, 100),
+            shadowSizeVariation: number('shadowSizeVariation', 0, 100), shadowDensityVariation: number('shadowDensityVariation', 0, 100),
+            hoverStrength: number('hoverStrength', 0, 300), hoverRadius: number('hoverRadius', 10, 500),
+            hoverFollow: number('hoverFollow', 0, 300), clickStrength: number('clickStrength', 0, 300),
+            clickRadius: number('clickRadius', 10, 500), clickDuration: number('clickDuration', 400, 3000),
             leafBlur: number('leafBlur', 0, 100), windowBlur: number('windowBlur', 0, 60),
             shadowDepth: number('shadowDepth', 0, 100), treeSize: number('treeSize', 40, 180),
             treeX: number('treeX', -50, 50), treeY: number('treeY', -50, 50),
@@ -101,6 +113,7 @@
     if (!layer || document.getElementById('backgroundController')) return;
     const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
     const mobile = matchMedia('(max-width: 600px)');
+    const hoverPointer = matchMedia('(hover: hover) and (pointer: fine)');
     let settings = { ...defaults };
     let lookDrafts = {};
     try {
@@ -142,6 +155,16 @@
             <p class="background-shared-note">Shared light and motion. Custom section palettes stay saved.</p>
             <div class="background-switch-row"><label for="ditherEnabled">Dither glow</label><input class="background-switch" type="checkbox" role="switch" id="ditherEnabled" data-setting="enabled"></div>
             <fieldset class="background-options" aria-label="Glow settings">
+                <div class="background-interaction-controls"><h3>Hover</h3>
+                ${range('hoverStrength', 'Hover strength', 0, 300, 5)}
+                ${range('hoverRadius', 'Hover radius', 10, 500, 5)}
+                ${range('hoverFollow', 'Follow delay', 0, 300, 10)}
+                <h3>Click</h3>
+                ${range('clickStrength', 'Click strength', 0, 300, 5)}
+                ${range('clickRadius', 'Click radius', 10, 500, 5)}
+                ${range('clickDuration', 'Click duration', 400, 3000, 100)}
+                <p>Updates live. Zero strength turns that effect off. Settings save on this device.</p>
+                </div>
                 <div class="background-look-grid" role="group" aria-label="Light style">${Object.entries(looks).map(([key, look]) => `
                     <button type="button" class="background-look" data-look="${key}" aria-pressed="false"><span class="background-look-art background-look-art-${key}" aria-hidden="true"></span><span>${look.label}</span></button>`).join('')}
                 </div>
@@ -162,6 +185,15 @@
                 ${range('pixelSize', 'Dot size', 1, 5, 0.5)}
                 ${range('strength', 'Base glow strength')}
                 ${range('saturation', 'Default glow saturation', 0, 250)}
+                </div>
+                <div class="background-dither-controls background-shadow-controls"><h3>Shadow dither</h3>
+                <p>The foliage's ordered dither continues softly into the dark mat. Zero strength turns the added texture off; zero speed keeps it still.</p>
+                ${range('shadowDither', 'Shadow texture strength')}
+                ${range('shadowDensity', 'Dot density')}
+                ${range('shadowDotSize', 'Shadow dot size', 1, 4)}
+                ${range('shadowSizeVariation', 'Size gradient')}
+                ${range('shadowDensityVariation', 'Density gradient')}
+                ${range('shadowSpeed', 'Texture speed')}
                 </div>
                 <details class="background-fine-tuning"><summary>Fine tuning <span aria-hidden="true">+</span></summary>
                     <div class="background-fine-tuning-content">
@@ -260,6 +292,11 @@
     const fragmentSource = `
         precision highp float;
         uniform vec2 uResolution;
+        uniform vec3 uRipple;
+        uniform vec4 uHover;
+        uniform vec3 uClickSettings;
+        uniform vec4 uShadowDither;
+        uniform vec2 uDitherVariation;
         uniform vec3 uColor, uGlowColor;
         uniform float uGlowOverride, uHueRotation, uMatchIntro;
         uniform float uTime, uStrength, uSaturation, uStyle, uScale, uDistortion, uSoftness, uDetail, uContrast, uDirection, uSeed;
@@ -441,6 +478,33 @@
             light *= 1.0 - shadow * uFoliagePaint.w;
             return vec2(light, coverage);
         }
+        float shadowCoverage(float light, float sceneCoverage) {
+            float mask = 1.0 - smoothstep(.015, .32, light);
+            if (uStyle > 4.5) {
+                float windowLight = pow(sceneCoverage, mix(.8, 2.8, uContrast));
+                mask *= 1.0 - smoothstep(.015, .16, windowLight);
+            }
+            return mask;
+        }
+        vec3 addShadowDither(vec3 color, vec3 ink, float light, vec2 cell, float sceneCoverage, float ripple, float hover) {
+            // One broad field grades neighboring dots together into soft patches.
+            // Screen-relative coordinates keep patch size independent of dot size.
+            vec2 patchPoint = cell / uResolution.y * 3.5;
+            float patch = smoothstep(.15, .85, noise(patchPoint + uSeed));
+            vec2 dotCell = floor(cell / uShadowDither.z);
+            float density = clamp(uShadowDither.y * mix(1.0,
+                mix(.6, 1.4, patch), uDitherVariation.y) * (1.0 + .9 * ripple), 0.0, 1.0);
+            // Match the light's ordered threshold pattern and pixel grid exactly.
+            float threshold = 1.0 - bayer8(dotCell);
+            float coarseThreshold = 1.0 - bayer8(floor(dotCell / 2.0));
+            float dots = mix(smoothstep(threshold, threshold + .025, density),
+                smoothstep(coarseThreshold, coarseThreshold + .025, density), patch * uDitherVariation.x);
+            // Hover changes the existing dots' brightness, never their placement
+            // or density. Click can still briefly open up the same pattern.
+            float pulse = (.88 + .12 * sin(uShadowDither.w + patch * 3.14159265)) * (1.0 + 1.2 * ripple + 1.8 * hover);
+            float mask = shadowCoverage(light, sceneCoverage);
+            return mix(color, max(color, ink), clamp(dots * pulse * mask * uShadowDither.x * .18, 0.0, 1.0));
+        }
         void main() {
             vec2 cell = floor(gl_FragCoord.xy);
             vec2 uv = (cell + 0.5) / uResolution;
@@ -449,6 +513,7 @@
             p = mat2(cos(angle), -sin(angle), sin(angle), cos(angle)) * p;
             float t = uTime * 0.13;
             float field;
+            float sceneCoverage = 0.0;
             if (uStyle < 0.5) field = veils(p, t);
             else if (uStyle < 1.5) field = drift(p, t);
             else if (uStyle < 2.5) field = water(p, t);
@@ -458,7 +523,20 @@
                 vec2 foliage = foliageLight(vec2(uv.x, 1.0 - uv.y) * uViewport);
                 // Compose light, frame, leaves, edge blur, and falloff BEFORE dithering.
                 field = foliage.x * foliage.y;
+                sceneCoverage = foliage.y;
             }
+            // A broad bloom in the dots: no travelling ring or oscillation.
+            vec2 clickDelta = (uv - uRipple.xy) * vec2(uResolution.x / uResolution.y, 1.15);
+            float age = uRipple.z / uClickSettings.z;
+            float spread = uClickSettings.y * mix(.2885, 1.0, smoothstep(0.0, 1.0, age));
+            float envelope = smoothstep(0.0, .086, age) * (1.0 - smoothstep(.214, 1.0, age));
+            float grain = .75 + .25 * noise(uv * vec2(uResolution.x / uResolution.y, 1.0) * 24.0 + uSeed);
+            float ripple = exp(-dot(clickDelta, clickDelta) / (2.0 * spread * spread)) * envelope * grain;
+            vec2 hoverDelta = (uv - uHover.xy) * vec2(uResolution.x / uResolution.y, 1.0);
+            float hover = exp(-dot(hoverDelta, hoverDelta) / (2.0 * uHover.w * uHover.w)) * uHover.z * grain;
+            ripple *= 1.25 * uClickSettings.x;
+            hover *= 1.4;
+            float interaction = min(4.5, ripple + hover);
             float light = pow(clamp(field, 0.0, 1.0), mix(0.8, 2.8, uContrast));
             // Quiet the side columns where project titles and comments live.
             float readingArea = exp(-pow((uv.y - 0.5) * 3.8, 2.0)) * smoothstep(0.15, 0.38, abs(uv.x - 0.5));
@@ -466,6 +544,10 @@
             float vignette = 1.0 - 0.22 * smoothstep(0.15, 0.8, length(uv - 0.5));
             // Leave highlight headroom so even an unobstructed pane retains dots.
             if (uStyle > 4.5) light *= .86 * vignette;
+            float baseLight = light;
+            // Route interaction to the pattern already present in each area.
+            // Don't create a second light-dither layer over the shadow dots.
+            light = clamp(light + .16 * interaction * (1.0 - shadowCoverage(baseLight, sceneCoverage)), 0.0, 1.0);
             float stepped = floor(clamp(light, 0.0, 1.0) * uTonalSteps + bayer8(cell)) / uTonalSteps;
             float shade = mix(light, stepped, uDitherAmount);
             vec3 hue = pow(uColor / max(max(uColor.r, uColor.g), max(uColor.b, 0.035)), vec3(1.25));
@@ -475,19 +557,31 @@
                 vec3 lit = adjustGlowSaturation(mix(glow, vec3(.83, .9, .94), .12));
                 // A zero field is the unlit mat; shadows and both window edges share
                 // the same screen. There is no smooth opacity mask after this step.
-                gl_FragColor = vec4(matchIntroHue(mix(uColor, lit, shade * uStrength)), 1.0);
+                gl_FragColor = vec4(matchIntroHue(addShadowDither(mix(uColor, lit, shade * uStrength), lit, baseLight, cell, sceneCoverage, ripple, hover)), 1.0);
                 return;
             }
             vec3 color = mix(shadow, glow, shade);
             color = mix(color, vec3(0.83, 0.9, 0.94), pow(shade, 4.0) * 0.55);
             color = adjustGlowSaturation(color);
             // Preserve some depth at the viewport edges without a dark seam.
-            gl_FragColor = vec4(matchIntroHue(mix(uColor, color * vignette, uStrength)), 1.0);
+            gl_FragColor = vec4(matchIntroHue(addShadowDither(mix(uColor, color * vignette, uStrength), adjustGlowSaturation(glow), baseLight, cell, sceneCoverage, ripple, hover)), 1.0);
         }
     `;
     let gl = null, program = null, buffer = null, uniforms = null, foliageTexture = null;
     let lost = false, failed = false, frame = 0, time = 11, lastDraw = 0, dirty = true;
     let colorUntil = 0, size = null;
+    let rippleStart = -Infinity, rippleX = .5, rippleY = .5;
+    let shadowTime = 0;
+    let hoverX = .5, hoverY = .5, hoverTargetX = .5, hoverTargetY = .5, hoverLevel = 0, hoverTarget = 0;
+    function hoverPending() {
+        return Math.abs(hoverLevel - hoverTarget) > .001 || (hoverTarget > 0 &&
+            (Math.abs(hoverX - hoverTargetX) > .0001 || Math.abs(hoverY - hoverTargetY) > .0001));
+    }
+    function hideHover(immediate = false) {
+        hoverTarget = 0;
+        if (immediate) hoverLevel = 0;
+        if (!frame) wake();
+    }
     let foliageImage = null, foliageLoading = null, foliageFailed = false;
     let scene = null, layout = null, foliageSignature = '', maskSignature = '';
     const shaders = [];
@@ -616,8 +710,8 @@
             const position = gl.getAttribLocation(program, 'aPosition');
             gl.enableVertexAttribArray(position);
             gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
-            uniforms = Object.fromEntries(['uResolution', 'uColor', 'uGlowColor', 'uGlowOverride', 'uHueRotation', 'uMatchIntro', 'uTime', 'uStrength', 'uSaturation', 'uStyle', 'uScale', 'uDistortion', 'uSoftness', 'uDetail', 'uContrast', 'uDirection', 'uSeed',
-                'uFoliageMask', 'uWindowFromScreen', 'uLeafFromWindow', 'uViewport', 'uWindowSize', 'uLeafSize', 'uLeafPadding', 'uLightCenter', 'uLightSpread', 'uFramePosition', 'uFoliagePaint', 'uDitherAmount', 'uTonalSteps', 'uStageInset'
+            uniforms = Object.fromEntries(['uDitherVariation', 'uShadowDither', 'uResolution', 'uColor', 'uGlowColor', 'uGlowOverride', 'uHueRotation', 'uMatchIntro', 'uTime', 'uStrength', 'uSaturation', 'uStyle', 'uScale', 'uDistortion', 'uSoftness', 'uDetail', 'uContrast', 'uDirection', 'uSeed',
+                'uClickSettings', 'uHover', 'uRipple', 'uFoliageMask', 'uWindowFromScreen', 'uLeafFromWindow', 'uViewport', 'uWindowSize', 'uLeafSize', 'uLeafPadding', 'uLightCenter', 'uLightSpread', 'uFramePosition', 'uFoliagePaint', 'uDitherAmount', 'uTonalSteps', 'uStageInset'
             ].map(key => [key, gl.getUniformLocation(program, key)]));
             foliageTexture = gl.createTexture();
             gl.activeTexture(gl.TEXTURE0);
@@ -641,6 +735,7 @@
         return document.hidden || document.body.classList.contains('desktop-fullscreen-mode') || !!document.fullscreenElement || !!document.webkitFullscreenElement;
     }
     function animated() { return settings.speed > 0 && !reducedMotion.matches && (settings.style !== 'foliage' || settings.sway > 0); }
+    function shadowAnimated() { return settings.shadowDither > 0 && settings.shadowDensity > 0 && settings.shadowSpeed > 0 && !reducedMotion.matches; }
     function draw() {
         const nextSize = renderSize(window.innerWidth, window.innerHeight, settings.pixelSize);
         if (!size || nextSize.width !== size.width || nextSize.height !== size.height) {
@@ -663,6 +758,12 @@
         gl.uniform3fv(uniforms.uGlowColor, palette ? palette.slice(0, 3) : color);
         gl.uniform1f(uniforms.uGlowOverride, palette?.[3] ?? 0);
         gl.uniform1f(uniforms.uTime, time);
+        gl.uniform4f(uniforms.uShadowDither, settings.shadowDither / 100, settings.shadowDensity / 100, settings.shadowDotSize, shadowTime);
+        gl.uniform2f(uniforms.uDitherVariation, settings.shadowSizeVariation / 100, settings.shadowDensityVariation / 100);
+        const clickEnd = settings.clickDuration / 1000 + 1;
+        gl.uniform3f(uniforms.uRipple, rippleX, rippleY, reducedMotion.matches ? clickEnd : Math.min(clickEnd, (performance.now() - rippleStart) / 1000));
+        gl.uniform3f(uniforms.uClickSettings, settings.clickStrength / 100, settings.clickRadius / window.innerHeight, settings.clickDuration / 1000);
+        gl.uniform4f(uniforms.uHover, hoverX, hoverY, reducedMotion.matches ? 0 : hoverLevel * settings.hoverStrength / 100, settings.hoverRadius / window.innerHeight);
         gl.uniform1f(uniforms.uStrength, Math.min(1, settings.strength / 100 * (palette?.[4] ?? 1)));
         gl.uniform1f(uniforms.uSaturation, palette?.[5] ?? settings.saturation / 100);
         gl.uniform1f(uniforms.uDitherAmount, settings.ditherAmount / 100);
@@ -694,7 +795,14 @@
         if (!settings.enabled || suspended() || lost || failed) { lastDraw = 0; return; }
         const interval = mobile.matches ? 1000 / 24 : 1000 / 30;
         if (dirty || !lastDraw || now - lastDraw >= interval - 1) {
+            const elapsed = lastDraw ? Math.min(now - lastDraw, 100) : interval;
+            const follow = settings.hoverFollow === 0 ? 1 : 1 - Math.exp(-elapsed / settings.hoverFollow);
+            hoverX += (hoverTargetX - hoverX) * follow;
+            hoverY += (hoverTargetY - hoverY) * follow;
+            hoverLevel += (hoverTarget - hoverLevel) * (1 - Math.exp(-elapsed / (hoverTarget ? 130 : 260)));
+            if (Math.abs(hoverLevel - hoverTarget) <= .001) hoverLevel = hoverTarget;
             if (animated() && lastDraw) time += Math.min((now - lastDraw) / 1000, 0.1) * settings.speed / 30;
+            if (shadowAnimated() && lastDraw) shadowTime = (shadowTime + Math.min((now - lastDraw) / 1000, .1) * settings.shadowSpeed / 30) % (Math.PI * 2);
             try { draw(); } catch (_) {
                 if (settings.style === 'foliage') foliageFailed = true;
                 else { release(); failed = true; }
@@ -703,7 +811,7 @@
             lastDraw = now; dirty = false;
         }
         // Still frames wake only for controls, resize, or a color transition.
-        if (animated() || now < colorUntil) frame = requestAnimationFrame(tick);
+        if (animated() || shadowAnimated() || hoverPending() || now < colorUntil || (!reducedMotion.matches && settings.clickStrength > 0 && now < rippleStart + settings.clickDuration)) frame = requestAnimationFrame(tick);
         else lastDraw = 0;
     }
     function wake() {
@@ -731,10 +839,13 @@
             if (input.type === 'checkbox') input.checked = settings[key];
             else {
                 input.value = settings[key];
-                const label = ['pixelSize', 'leafBlur', 'windowBlur'].includes(key) ? `${settings[key]} px`
+                const label = ['pixelSize', 'leafBlur', 'windowBlur', 'hoverRadius', 'clickRadius'].includes(key) ? `${settings[key]} px`
+                    : key === 'clickDuration' ? `${(settings[key] / 1000).toFixed(1)} s`
+                    : key === 'hoverFollow' ? `${settings[key]} ms`
                     : ['direction', 'windowAngle'].includes(key) ? `${settings[key]}°`
                     : key === 'tonalSteps' ? `${settings[key]} steps`
-                    : key === 'speed' && settings.speed === 0 ? 'Still' : `${settings[key]}%`;
+                    : key === 'shadowDotSize' ? `${settings[key]}×`
+                    : ['speed', 'shadowSpeed'].includes(key) && settings[key] === 0 ? 'Still' : `${settings[key]}%`;
                 input.closest('label').querySelector('output').textContent = label;
                 input.setAttribute('aria-valuetext', label);
             }
@@ -752,6 +863,7 @@
             : 'Colors follow the current video automatically.';
         controller.querySelector('.background-retry').hidden = !(foliage && foliageFailed && settings.enabled && !failed && !lost);
         controller.querySelector('[data-setting="speed"]').disabled = reducedMotion.matches;
+        controller.querySelector('[data-setting="shadowSpeed"]').disabled = reducedMotion.matches;
         // These controls shape procedural fields; foliage has explicit scene controls.
         for (const key of ['scale', 'distortion', 'detail', 'direction', 'softness']) {
             controller.querySelector(`[data-setting="${key}"]`).closest('label').hidden = foliage;
@@ -818,6 +930,7 @@
         const next = suspended();
         if (next === wasSuspended) return;
         wasSuspended = next;
+        if (next) { hoverLevel = 0; hoverTarget = 0; }
         if (next && document.body.classList.contains('desktop-fullscreen-mode')) setPanel(false);
         wake();
     }
@@ -825,9 +938,37 @@
     document.addEventListener('visibilitychange', syncVisibility);
     document.addEventListener('fullscreenchange', syncVisibility);
     document.addEventListener('webkitfullscreenchange', syncVisibility);
+    document.addEventListener('pointermove', event => {
+        if (event.pointerType === 'touch' || !hoverPointer.matches || reducedMotion.matches || !settings.enabled || !settings.hoverStrength || suspended() ||
+            !(event.target instanceof Element) || event.target.closest('a, button, input, select, textarea, label, video, [role="button"], [role="dialog"], [contenteditable], .video-frame, .landing-video-frame, .background-controller')) {
+            if (hoverTarget) hideHover();
+            return;
+        }
+        const bounds = canvas.getBoundingClientRect();
+        if (!bounds.width || !bounds.height || event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) { hideHover(); return; }
+        hoverTargetX = (event.clientX - bounds.left) / bounds.width;
+        hoverTargetY = 1 - (event.clientY - bounds.top) / bounds.height;
+        if (!hoverTarget && hoverLevel < .01) { hoverX = hoverTargetX; hoverY = hoverTargetY; }
+        hoverTarget = 1;
+        if (!frame) wake();
+    }, { passive: true });
+    document.documentElement.addEventListener('pointerleave', () => hideHover());
+    document.addEventListener('scroll', () => hideHover(), { passive: true, capture: true });
+    window.addEventListener('blur', () => hideHover(true));
+    hoverPointer.addEventListener('change', () => hideHover(true));
+    document.addEventListener('click', event => {
+        if (event.button !== 0 || event.detail === 0 || reducedMotion.matches || !settings.enabled || suspended()) return;
+        if (!(event.target instanceof Element) || event.target.closest('a, button, input, select, textarea, label, video, [role="button"], [contenteditable], .video-frame, .landing-video-frame, .background-controller, #grid-glow-studio')) return;
+        const bounds = canvas.getBoundingClientRect();
+        if (!bounds.width || !bounds.height || event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) return;
+        rippleX = (event.clientX - bounds.left) / bounds.width;
+        rippleY = 1 - (event.clientY - bounds.top) / bounds.height;
+        rippleStart = performance.now();
+        wake();
+    });
     window.addEventListener('resize', wake, { passive: true });
     window.addEventListener('pagehide', () => { if (frame) cancelAnimationFrame(frame); frame = 0; lastDraw = 0; });
     window.addEventListener('pageshow', wake);
-    reducedMotion.addEventListener('change', () => { wake(); syncControls(); });
+    reducedMotion.addEventListener('change', () => { hoverLevel = 0; hoverTarget = 0; wake(); syncControls(); });
     wake(); syncControls();
 })(typeof window !== 'undefined' ? window : globalThis);

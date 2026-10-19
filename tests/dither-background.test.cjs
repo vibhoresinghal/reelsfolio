@@ -75,10 +75,25 @@ test('fresh and reset defaults export the entire approved JSON, including every 
     const approved = require('../dither-default.json');
     assert.deepEqual(defaults, approved.settings);
     assert.deepEqual(normalize(null), defaults);
-    assert.deepEqual(JSON.parse(exportSettings(defaults)), approved);
+    assert.deepEqual(JSON.parse(exportSettings(defaults, {}, approved.sectionColors)), approved);
     for (const [style, expected] of Object.entries(approved.looks)) {
         assert.deepEqual(lookSettings(selectLook(defaults, style)), expected, style);
     }
+});
+
+test('shadow texture migrates legacy settings and preserves per-look off and still controls', () => {
+    const legacy = normalize({ style: 'foliage', contrast: 80, speed: 0 });
+    assert.equal(legacy.shadowDither, 28);
+    assert.equal(legacy.contrast, 80);
+    assert.equal(legacy.speed, 0);
+    const custom = normalize({ ...legacy, shadowDither: 0, shadowDensity: 0, shadowDotSize: 3, shadowSpeed: 0 });
+    const exported = JSON.parse(exportSettings(custom));
+    assert.deepEqual(normalize(exported.settings), custom);
+    const restored = normalize({ ...selectLook(defaults, 'foliage'), ...exported.looks.foliage });
+    for (const key of ['shadowDither', 'shadowDensity', 'shadowDotSize', 'shadowSpeed']) assert.equal(restored[key], custom[key]);
+    const invalid = normalize({ shadowDither: -10, shadowDensity: 200, shadowDotSize: 90, shadowSpeed: NaN });
+    assert.deepEqual([invalid.shadowDither, invalid.shadowDensity, invalid.shadowDotSize, invalid.shadowSpeed], [0, 100, 4, 44]);
+    assert.equal(selectLook(custom, 'foliage').shadowDither, defaults.shadowDither);
 });
 
 test('JSON exports the current unsaved controls, hidden fine tuning, and other look drafts', () => {
@@ -101,8 +116,8 @@ test('JSON exports the current unsaved controls, hidden fine tuning, and other l
 
 test('combined controls bound old or damaged drafts and preserve true sharp, smooth, and still values', () => {
     const legacy = normalize({ style: 'foliage', softness: 100, strength: 33, saturation: 218 });
-    assert.equal(legacy.leafBlur, 11, 'legacy shared blur must not replace the approved leaf blur');
-    assert.equal(legacy.windowBlur, 14);
+    assert.equal(legacy.leafBlur, 9, 'legacy shared blur must not replace the approved leaf blur');
+    assert.equal(legacy.windowBlur, 12);
     assert.equal(legacy.tonalSteps, 3);
     const zero = normalize({ ...legacy, leafBlur: 0, windowBlur: 0, shadowDepth: 0, ditherAmount: 0, sway: 0 });
     for (const key of ['leafBlur', 'windowBlur', 'shadowDepth', 'ditherAmount', 'sway']) assert.equal(zero[key], 0);
@@ -110,7 +125,7 @@ test('combined controls bound old or damaged drafts and preserve true sharp, smo
     const bad = normalize({ leafBlur: -5, windowBlur: 999, shadowDepth: Infinity, treeSize: 0,
         treeX: -999, treeY: 999, windowAngle: 90, sway: 999, ditherAmount: '70', tonalSteps: 99 });
     assert.deepEqual([bad.leafBlur, bad.windowBlur, bad.shadowDepth, bad.treeSize, bad.treeX, bad.treeY,
-        bad.windowAngle, bad.sway, bad.ditherAmount, bad.tonalSteps], [0, 60, 85, 40, -50, 50, 45, 200, 72, 8]);
+        bad.windowAngle, bad.sway, bad.ditherAmount, bad.tonalSteps], [0, 60, 85, 40, -50, 50, 45, 200, 88, 8]);
 });
 
 test('foliage scene and dithering round-trip together without changing other looks or shared color', () => {
@@ -127,7 +142,7 @@ test('foliage scene and dithering round-trip together without changing other loo
     assert.equal(exported.settings.leafBlur, 0);
     assert.ok(!Object.hasOwn(exported.looks.drift, 'leafBlur'));
     const reset = selectLook(current, 'foliage');
-    assert.equal(reset.leafBlur, 11);
+    assert.equal(reset.leafBlur, 9);
     assert.equal(reset.treeX, 0);
     assert.equal(reset.tonalSteps, 3);
     for (const key of ['strength', 'saturation', 'matBrightness', 'pixelSize']) assert.equal(reset[key], current[key]);

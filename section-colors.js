@@ -109,12 +109,12 @@
     // Apply saved intro colors even while videos.json is still loading. Full
     // section metadata replaces this boot record when the application is ready.
     const themeColor = document.querySelector('meta[name="theme-color"]')?.content;
-    let overrides = Object.create(null), records = [{ id: 'landing', title: 'Intro', color: validHex(themeColor) ? themeColor : '#091a12' }],
+    let overrides = { t1v1: { saturation: 59.3, glowBrightness: 134.3, glowSaturation: 218.3 } }, records = [{ id: 'landing', title: 'Intro', color: validHex(themeColor) ? themeColor : '#091a12' }],
         activeId = 'landing', navigate = () => {}, shared = () => ({}), matchIntro = true;
     let pane, controller, storageAvailable = true, renderFrom, renderTo, transitionStart = 0, signature = '';
     try {
         const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-        overrides = readSaved(saved);
+        if (saved?.version === 1 && saved.sections) overrides = readSaved(saved);
         matchIntro = saved?.matchIntro !== false;
     } catch (_) { /* Optional device storage. */ }
     const activeRecord = () => records.find(record => record.id === activeId);
