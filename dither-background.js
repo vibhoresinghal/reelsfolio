@@ -110,6 +110,7 @@
     if (!scope.document) return;
 
     const root = document.documentElement;
+    const localControls = ['localhost', '127.0.0.1', '[::1]', '::1'].includes(scope.location?.hostname);
     const layer = document.getElementById('bgLayer');
     if (!layer || document.getElementById('backgroundController')) return;
     const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -118,7 +119,7 @@
     let settings = { ...defaults };
     let lookDrafts = {};
     try {
-        const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || localStorage.getItem('reelfolio.dither.v1'));
+        const stored = localControls ? JSON.parse(localStorage.getItem(STORAGE_KEY) || localStorage.getItem('reelfolio.dither.v1')) : null;
         settings = normalize(stored);
         for (const style of Object.keys(looks)) {
             if (stored?.looks && Object.hasOwn(stored.looks, style)) {
@@ -227,7 +228,9 @@
             <label class="background-json" hidden>Settings JSON<textarea readonly rows="6" spellcheck="false" aria-label="Settings JSON to copy"></textarea><span>Select the text and copy it to share.</span></label>
             <div class="background-panel-footer" hidden><span>Saved on this device</span><button class="background-reset" type="button">Reset light settings</button></div>
         </section>`;
-    document.body.appendChild(controller);
+    // Keep the internal controls detached on the public site. Rendering still
+    // uses the approved defaults, without exposing an editor to visitors.
+    if (localControls) document.body.appendChild(controller);
     const launcher = controller.querySelector('.background-launcher');
     const panel = controller.querySelector('.background-panel');
     const options = controller.querySelector('.background-options');

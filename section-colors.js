@@ -105,6 +105,7 @@
     if (!scope.document) return;
 
     const root = document.documentElement, layer = document.getElementById('bgLayer');
+    const localControls = ['localhost', '127.0.0.1', '[::1]', '::1'].includes(scope.location?.hostname);
     const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
     // Apply saved intro colors even while videos.json is still loading. Full
     // section metadata replaces this boot record when the application is ready.
@@ -113,7 +114,7 @@
         activeId = 'landing', navigate = () => {}, shared = () => ({}), matchIntro = true;
     let pane, controller, storageAvailable = true, renderFrom, renderTo, transitionStart = 0, signature = '';
     try {
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        const saved = localControls ? JSON.parse(localStorage.getItem(STORAGE_KEY)) : null;
         if (saved?.version === 1 && saved.sections) overrides = readSaved(saved);
         matchIntro = saved?.matchIntro !== false;
     } catch (_) { /* Optional device storage. */ }
