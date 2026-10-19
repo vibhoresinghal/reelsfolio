@@ -4,6 +4,36 @@ const { hexToHsv, hsvToHex, normalize, palette, readSaved, toLab, rotateHue, mat
 const { defaults, exportSettings } = require('../dither-background.js');
 const videos = require('../videos.json');
 
+test('scroll palettes blend directly and retarget from the visible color without a jump', () => {
+    const fs = require('node:fs'), vm = require('node:vm');
+    let now = 0;
+    const properties = new Map();
+    const style = { getPropertyValue: key => properties.get(key), setProperty: (key, value) => properties.set(key, value) };
+    const document = { documentElement: { style }, getElementById: () => ({ style: { setProperty() {} } }), querySelector: () => null };
+    const window = { document, dispatchEvent() {} };
+    vm.runInNewContext(fs.readFileSync(require.resolve('../section-colors.js'), 'utf8'), {
+        window, document, localStorage: { getItem: () => null },
+        matchMedia: () => ({ matches: false }), performance: { now: () => now },
+        CustomEvent: class {}
+    });
+    const api = window.ReelFolioColors;
+    api.register([{ id: 'landing', color: '#091a12' }, { id: 'purple', color: '#1c121e' }, { id: 'blue', color: '#05191e' }]);
+    const start = Array.from(api.sample());
+    api.activate('purple');
+    const end = Array.from(api.sample(600));
+    now = 300;
+    const middle = Array.from(api.sample());
+    for (const i of [9, 11]) assert.ok(Math.abs(middle[i] - (start[i] + end[i]) / 2) < 1e-12);
+    assert.ok(Math.hypot(middle[9], middle[11]) < .5, 'opposing hues soften instead of sweeping through a saturated third hue');
+    api.activate('blue');
+    assert.deepEqual(Array.from(api.sample()), middle, 'rapid scrolling resumes at the exact visible blend');
+    now += 600;
+    const finished = Array.from(api.sample());
+    const angle = api.current().hueRotation;
+    assert.ok(Math.abs(finished[9] - Math.cos(angle)) < 1e-12);
+    assert.ok(Math.abs(finished[11] - Math.sin(angle)) < 1e-12);
+});
+
 test('all existing section backgrounds round-trip exactly and inherit the approved shared light', () => {
     const colors = [videos.landingSection.bgColor, ...videos.tabs.flatMap(tab => tab.videos.map(video => video.bgColor)), '#000000', '#ffffff', '#ff0000', '#00ff00', '#0000ff', '#808080'];
     for (const color of colors) {

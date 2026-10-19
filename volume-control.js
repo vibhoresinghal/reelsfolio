@@ -13,6 +13,7 @@
     let closeTimer = 0;
     let observedFrame = null;
     const hover = matchMedia('(hover: hover) and (pointer: fine)');
+    const expandable = matchMedia('(min-width: 601px) and (hover: hover) and (pointer: fine)');
 
     function syncVolume() {
         const value = isMuted ? 0 : Math.round(playbackVolume * 100);
@@ -23,6 +24,7 @@
     }
 
     function expanded(open) {
+        open = Boolean(open && expandable.matches);
         clearTimeout(closeTimer);
         if (!open && document.activeElement === slider) button.focus();
         clearTimeout(closeTimer);
@@ -73,6 +75,7 @@
     }, { passive: true });
 
     slider.addEventListener('pointerdown', event => {
+        if (!expandable.matches) return;
         dragging = true;
         slider.setPointerCapture(event.pointerId);
         keepMobileControls();
@@ -143,6 +146,11 @@
     }, true);
     scroller?.addEventListener('scroll', schedule, { passive: true });
     window.addEventListener('resize', schedule, { passive: true });
+    expandable.addEventListener('change', () => {
+        dragging = false;
+        expanded(false);
+        schedule();
+    });
     document.addEventListener('visibilitychange', schedule);
     rail.addEventListener('transitionend', schedule);
     syncVolume();

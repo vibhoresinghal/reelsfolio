@@ -13,10 +13,10 @@
     <link rel="stylesheet" href="environment-production.css?v=dither-hover-2">
     <link rel="preload" href="assets/environment/olive-bough.webp" as="image" type="image/webp" crossorigin="anonymous" media="(min-width: 601px)">
     <script defer src="background-runtime.js?v=dither-hover-2"></script>
-    <script defer src="section-colors.js?v=4"></script>
-    <script defer src="dither-background.js?v=16"></script>
+    <script defer src="section-colors.js?v=5"></script>
+    <script defer src="dither-background.js?v=18"></script>
     <script defer src="animation-visibility.js"></script>
-    <script defer src="volume-control.js"></script>
+    <script defer src="volume-control.js?v=2"></script>
 
     <!-- Preconnect to external domains -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1770,7 +1770,8 @@
         }
 
         .landing-locations {
-            display: flex;
+            /* Temporarily hide the location badges. */
+            display: none;
             gap: 8px;
             flex-wrap: wrap;
         }
@@ -3356,7 +3357,7 @@
             transition: none !important;
         }
     </style>
-    <link rel="stylesheet" href="volume-control.css">
+    <link rel="stylesheet" href="volume-control.css?v=2">
     <link rel="stylesheet" href="dither-background.css?v=12">
 </head>
 

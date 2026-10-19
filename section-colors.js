@@ -149,13 +149,12 @@
         layer.style.setProperty('--mat-grid-opacity', value.matBrightness / 100);
         const source = matchIntro ? introPalette() : value;
         const rgb = hexRgb(source.glowColor || source.backgroundColor);
+        const angle = value.hueRotation || 0;
+        // Blend the two hue transforms in OKLab, rather than sweeping the angle
+        // around the color wheel through unrelated, fully saturated hues.
         const next = [...rgb, source.glowColor ? 1 : 0, value.glowBrightness / 100, value.glowSaturation / 100,
-            ...hexRgb(source.backgroundColor), value.hueRotation || 0, matchIntro ? 1 : 0];
+            ...hexRgb(source.backgroundColor), Math.cos(angle), matchIntro ? 1 : 0, Math.sin(angle)];
         renderFrom = animate && renderTo ? sample() : next;
-        // Follow the shorter arc when crossing the hue slider's wraparound.
-        if (animate && renderTo) {
-            renderFrom[9] = next[9] - Math.atan2(Math.sin(next[9] - renderFrom[9]), Math.cos(next[9] - renderFrom[9]));
-        }
         renderTo = next;
         transitionStart = performance.now();
         sync();

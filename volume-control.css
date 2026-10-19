@@ -108,6 +108,10 @@
 #volumeControl .volume-toggle:focus-visible { outline: 2px solid #f4efe6; outline-offset: -5px; }
 #videoVolume:focus-visible { outline: 1px solid #f4efe6; outline-offset: 3px; border-radius: 4px; }
 body.desktop-fullscreen-mode #fixedNavArrows #volumeControl { display: none !important; }
+@media (max-width: 600px), (hover: none), (pointer: coarse) {
+    #fixedNavArrows #volumeControl.is-expanded { width: 48px; }
+    #volumeControl .volume-slider-wrap { display: none; }
+}
 @media (prefers-reduced-motion: reduce) {
     #fixedNavArrows #volumeControl,
     #volumeControl .volume-slider-wrap,

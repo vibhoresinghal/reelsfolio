@@ -5,7 +5,7 @@
     const ditherDefaults = Object.freeze({ ditherAmount: 100, tonalSteps: 5,
         shadowDither: 35, shadowDensity: 32, shadowDotSize: 1, shadowSpeed: 18,
         shadowSizeVariation: 20, shadowDensityVariation: 30, hoverStrength: 55, hoverRadius: 140,
-        hoverFollow: 90, clickStrength: 100, clickRadius: 260, clickDuration: 1400 });
+        hoverFollow: 90, hoverFeather: 40, clickStrength: 100, clickRadius: 260, clickDuration: 1400 });
     const foliageDefaults = Object.freeze({ leafBlur: 9, windowBlur: 12, shadowDepth: 85,
         treeSize: 99, treeX: 0, treeY: 0, windowAngle: -17, sway: 100 });
     const looks = Object.freeze({
@@ -43,6 +43,7 @@
             shadowSizeVariation: number('shadowSizeVariation', 0, 100), shadowDensityVariation: number('shadowDensityVariation', 0, 100),
             hoverStrength: number('hoverStrength', 0, 300), hoverRadius: number('hoverRadius', 10, 500),
             hoverFollow: number('hoverFollow', 0, 300), clickStrength: number('clickStrength', 0, 300),
+            hoverFeather: number('hoverFeather', 0, 100),
             clickRadius: number('clickRadius', 10, 500), clickDuration: number('clickDuration', 400, 3000),
             leafBlur: number('leafBlur', 0, 100), windowBlur: number('windowBlur', 0, 60),
             shadowDepth: number('shadowDepth', 0, 100), treeSize: number('treeSize', 40, 180),
@@ -158,6 +159,7 @@
                 <div class="background-interaction-controls"><h3>Hover</h3>
                 ${range('hoverStrength', 'Hover strength', 0, 300, 5)}
                 ${range('hoverRadius', 'Hover radius', 10, 500, 5)}
+                ${range('hoverFeather', 'Edge feather')}
                 ${range('hoverFollow', 'Follow delay', 0, 300, 10)}
                 <h3>Click</h3>
                 ${range('clickStrength', 'Click strength', 0, 300, 5)}
@@ -294,11 +296,13 @@
         uniform vec2 uResolution;
         uniform vec3 uRipple;
         uniform vec4 uHover;
+        uniform float uHoverFeather;
         uniform vec3 uClickSettings;
         uniform vec4 uShadowDither;
         uniform vec2 uDitherVariation;
         uniform vec3 uColor, uGlowColor;
-        uniform float uGlowOverride, uHueRotation, uMatchIntro;
+        uniform float uGlowOverride, uMatchIntro;
+        uniform vec2 uHueTransform;
         uniform float uTime, uStrength, uSaturation, uStyle, uScale, uDistortion, uSoftness, uDetail, uContrast, uDirection, uSeed;
         uniform float uDitherAmount, uTonalSteps, uStageInset;
         uniform sampler2D uFoliageMask;
@@ -434,9 +438,9 @@
             return all(greaterThanEqual(color, vec3(0.0))) && all(lessThanEqual(color, vec3(1.0)));
         }
         vec3 matchIntroHue(vec3 color) {
-            if (uMatchIntro < .00001 || abs(uHueRotation) < .00001) return color;
+            if (uMatchIntro < .00001 || length(uHueTransform - vec2(1.0, 0.0)) < .00001) return color;
             vec3 lab = rgbToLab(clamp(color, 0.0, 1.0));
-            float c = cos(uHueRotation), s = sin(uHueRotation);
+            float c = uHueTransform.x, s = uHueTransform.y;
             vec2 ab = vec2(lab.y * c - lab.z * s, lab.y * s + lab.z * c);
             vec3 rgb = labToLinear(vec3(lab.x, ab));
             if (!inGamut(rgb)) {
@@ -533,7 +537,11 @@
             float grain = .75 + .25 * noise(uv * vec2(uResolution.x / uResolution.y, 1.0) * 24.0 + uSeed);
             float ripple = exp(-dot(clickDelta, clickDelta) / (2.0 * spread * spread)) * envelope * grain;
             vec2 hoverDelta = (uv - uHover.xy) * vec2(uResolution.x / uResolution.y, 1.0);
-            float hover = exp(-dot(hoverDelta, hoverDelta) / (2.0 * uHover.w * uHover.w)) * uHover.z * grain;
+            float hoverDistance = dot(hoverDelta, hoverDelta) / (2.0 * uHover.w * uHover.w);
+            float featherScale = 1.0 + .8 * uHoverFeather;
+            // A faint wider shoulder softens the radius without changing its core.
+            float hoverFalloff = mix(exp(-hoverDistance), exp(-hoverDistance / (featherScale * featherScale)), .45 * uHoverFeather);
+            float hover = hoverFalloff * uHover.z * grain;
             ripple *= 1.25 * uClickSettings.x;
             hover *= 1.4;
             float interaction = min(4.5, ripple + hover);
@@ -710,8 +718,8 @@
             const position = gl.getAttribLocation(program, 'aPosition');
             gl.enableVertexAttribArray(position);
             gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
-            uniforms = Object.fromEntries(['uDitherVariation', 'uShadowDither', 'uResolution', 'uColor', 'uGlowColor', 'uGlowOverride', 'uHueRotation', 'uMatchIntro', 'uTime', 'uStrength', 'uSaturation', 'uStyle', 'uScale', 'uDistortion', 'uSoftness', 'uDetail', 'uContrast', 'uDirection', 'uSeed',
-                'uClickSettings', 'uHover', 'uRipple', 'uFoliageMask', 'uWindowFromScreen', 'uLeafFromWindow', 'uViewport', 'uWindowSize', 'uLeafSize', 'uLeafPadding', 'uLightCenter', 'uLightSpread', 'uFramePosition', 'uFoliagePaint', 'uDitherAmount', 'uTonalSteps', 'uStageInset'
+            uniforms = Object.fromEntries(['uDitherVariation', 'uShadowDither', 'uResolution', 'uColor', 'uGlowColor', 'uGlowOverride', 'uHueTransform', 'uMatchIntro', 'uTime', 'uStrength', 'uSaturation', 'uStyle', 'uScale', 'uDistortion', 'uSoftness', 'uDetail', 'uContrast', 'uDirection', 'uSeed',
+                'uHoverFeather', 'uClickSettings', 'uHover', 'uRipple', 'uFoliageMask', 'uWindowFromScreen', 'uLeafFromWindow', 'uViewport', 'uWindowSize', 'uLeafSize', 'uLeafPadding', 'uLightCenter', 'uLightSpread', 'uFramePosition', 'uFoliagePaint', 'uDitherAmount', 'uTonalSteps', 'uStageInset'
             ].map(key => [key, gl.getUniformLocation(program, key)]));
             foliageTexture = gl.createTexture();
             gl.activeTexture(gl.TEXTURE0);
@@ -752,8 +760,10 @@
         gl.uniform2f(uniforms.uResolution, size.width, size.height);
         const palette = scope.ReelFolioColors?.sample();
         const matchIntro = palette?.[10] ?? 0;
-        gl.uniform3fv(uniforms.uColor, palette ? color.map((value, i) => value + (palette[6 + i] - value) * matchIntro) : color);
-        gl.uniform1f(uniforms.uHueRotation, palette?.[9] ?? 0);
+        // Every shader color shares the palette transition's clock, including
+        // independent section colors; CSS interpolation is only a fallback.
+        gl.uniform3fv(uniforms.uColor, palette ? palette.slice(6, 9) : color);
+        gl.uniform2f(uniforms.uHueTransform, palette?.[9] ?? 1, palette?.[11] ?? 0);
         gl.uniform1f(uniforms.uMatchIntro, matchIntro);
         gl.uniform3fv(uniforms.uGlowColor, palette ? palette.slice(0, 3) : color);
         gl.uniform1f(uniforms.uGlowOverride, palette?.[3] ?? 0);
@@ -764,6 +774,7 @@
         gl.uniform3f(uniforms.uRipple, rippleX, rippleY, reducedMotion.matches ? clickEnd : Math.min(clickEnd, (performance.now() - rippleStart) / 1000));
         gl.uniform3f(uniforms.uClickSettings, settings.clickStrength / 100, settings.clickRadius / window.innerHeight, settings.clickDuration / 1000);
         gl.uniform4f(uniforms.uHover, hoverX, hoverY, reducedMotion.matches ? 0 : hoverLevel * settings.hoverStrength / 100, settings.hoverRadius / window.innerHeight);
+        gl.uniform1f(uniforms.uHoverFeather, settings.hoverFeather / 100);
         gl.uniform1f(uniforms.uStrength, Math.min(1, settings.strength / 100 * (palette?.[4] ?? 1)));
         gl.uniform1f(uniforms.uSaturation, palette?.[5] ?? settings.saturation / 100);
         gl.uniform1f(uniforms.uDitherAmount, settings.ditherAmount / 100);
@@ -957,15 +968,24 @@
     window.addEventListener('blur', () => hideHover(true));
     hoverPointer.addEventListener('change', () => hideHover(true));
     document.addEventListener('click', event => {
-        if (event.button !== 0 || event.detail === 0 || reducedMotion.matches || !settings.enabled || suspended()) return;
-        if (!(event.target instanceof Element) || event.target.closest('a, button, input, select, textarea, label, video, [role="button"], [contenteditable], .video-frame, .landing-video-frame, .background-controller, #grid-glow-studio')) return;
+        if (event.button !== 0 || reducedMotion.matches || !settings.enabled || !settings.clickStrength || suspended()) return;
+        if (!(event.target instanceof Element)) return;
+        const button = event.target.closest('button, [role="button"], input[type="button"], input[type="submit"], input[type="reset"], a[href]');
+        if (button?.matches(':disabled, [aria-disabled="true"]')) return;
+        if (!button && (event.detail === 0 || event.target.closest('input, select, textarea, label, video, [contenteditable], .video-frame, .landing-video-frame, .background-controller'))) return;
+        let x = event.clientX, y = event.clientY;
+        if (button && event.detail === 0) {
+            const buttonBounds = button.getBoundingClientRect();
+            x = buttonBounds.left + buttonBounds.width / 2;
+            y = buttonBounds.top + buttonBounds.height / 2;
+        }
         const bounds = canvas.getBoundingClientRect();
-        if (!bounds.width || !bounds.height || event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) return;
-        rippleX = (event.clientX - bounds.left) / bounds.width;
-        rippleY = 1 - (event.clientY - bounds.top) / bounds.height;
+        if (!bounds.width || !bounds.height || x < bounds.left || x > bounds.right || y < bounds.top || y > bounds.bottom) return;
+        rippleX = (x - bounds.left) / bounds.width;
+        rippleY = 1 - (y - bounds.top) / bounds.height;
         rippleStart = performance.now();
         wake();
-    });
+    }, { capture: true, passive: true });
     window.addEventListener('resize', wake, { passive: true });
     window.addEventListener('pagehide', () => { if (frame) cancelAnimationFrame(frame); frame = 0; lastDraw = 0; });
     window.addEventListener('pageshow', wake);
