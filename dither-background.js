@@ -17,7 +17,7 @@
         foliage: { index: 5, label: 'Foliage light', description: 'One dithered light across the window and leaves', settings: { scale: 50, distortion: 0, softness: 5, detail: 0, contrast: 72, direction: 0, speed: 41, ditherAmount: 88, tonalSteps: 3,
             shadowDither: 28, shadowDensity: 18, shadowDotSize: 1, shadowSpeed: 44,
             shadowSizeVariation: 96, shadowDensityVariation: 100, hoverStrength: 105, hoverRadius: 55,
-            hoverFollow: 100, clickStrength: 90, clickRadius: 160, clickDuration: 1400 } }
+            hoverFollow: 100, clickStrength: 165, clickRadius: 210, clickDuration: 1800 } }
     });
     const defaults = Object.freeze({ enabled: true, strength: 29, saturation: 250, matBrightness: 29, pixelSize: 2.5, grid: true, style: 'foliage', seed: 7, ...ditherDefaults, ...foliageDefaults, ...looks.foliage.settings });
     const foliageMask = 'assets/environment/olive-bough-mask.webp';
@@ -790,6 +790,7 @@
         gl.uniform1f(uniforms.uSeed, settings.seed % 100 + Math.floor(settings.seed / 100) * 0.013);
         gl.drawArrays(gl.TRIANGLES, 0, 3);
         root.toggleAttribute('data-dither-active', true);
+        root.removeAttribute('data-dither-starting');
         if (settings.style === 'foliage' && !panel.hidden && !controller.querySelector('#backgroundLight').hidden && previewContext) {
             // Copy this already-rendered frame, only while the controller is open.
             // The preview has no extra animation loop or shader pass.
@@ -839,12 +840,14 @@
     }
     function syncControls() {
         const foliage = settings.style === 'foliage';
-        root.toggleAttribute('data-dither-starting', settings.enabled && foliage && !foliageImage && !foliageFailed && !failed && !lost);
         root.toggleAttribute('data-dither-grid', settings.grid);
         if (scope.ReelFolioColors?.current()) scope.ReelFolioColors.refresh();
         else layer.style.setProperty('--mat-grid-opacity', settings.matBrightness / 100);
         root.setAttribute('data-dither-style', settings.style);
         if (!settings.enabled || failed || lost || (foliage && (!foliageImage || foliageFailed))) root.removeAttribute('data-dither-active');
+        // Keep the fallback hidden until the first completed frame, including
+        // the gap between decoding the foliage mask and drawing it.
+        root.toggleAttribute('data-dither-starting', settings.enabled && !root.hasAttribute('data-dither-active') && !failed && !lost && (!foliage || !foliageFailed));
         inputs.forEach(input => {
             const key = input.dataset.setting;
             if (input.type === 'checkbox') input.checked = settings[key];
