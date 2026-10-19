@@ -13,6 +13,8 @@
     <link rel="stylesheet" href="environment-production.css?v=grid-glow-1">
     <link rel="preload" href="assets/environment/olive-bough.webp" as="image" type="image/webp" crossorigin="anonymous" media="(min-width: 601px)">
     <script defer src="background-runtime.js?v=grid-glow-1"></script>
+    <script defer src="section-colors.js?v=3"></script>
+    <script defer src="dither-background.js?v=11"></script>
     <script defer src="grid-glow-controls.js"></script>
     <script defer src="animation-visibility.js"></script>
     <script defer src="volume-control.js"></script>
@@ -3356,6 +3358,7 @@
         }
     </style>
     <link rel="stylesheet" href="volume-control.css">
+    <link rel="stylesheet" href="dither-background.css?v=12">
 </head>
 
 <body class="experience-awaiting-start initial-media-pending intro-pending">
@@ -3576,8 +3579,9 @@
         const globalTabs = document.getElementById('globalTabs');
         const controlBar = document.querySelector('.control-bar');
 
-        function setBackgroundColor(color) {
+        function setBackgroundColor(color, sectionId) {
             if (!color || !bgLayer) return;
+            if (window.ReelFolioColors?.activate(sectionId)) return;
             bgLayer.style.backgroundColor = color;
             document.documentElement.style.setProperty('--active-bg-color', color);
         }
@@ -4124,6 +4128,19 @@
 
             // Put all content in the single scroll container
             tabsContainer.innerHTML = `<div class="video-container" id="mainScrollContainer">${allSectionsHTML}</div>`;
+            const registerSectionColors = () => window.ReelFolioColors?.register([
+                { id: 'landing', title: `Intro · ${landing.name || 'Welcome'}`, color: landing.bgColor || '#091A12' },
+                ...videosData.tabs.flatMap(tab => tab.videos.map(video => ({ id: video.id, title: video.title, color: video.bgColor })))
+            ], id => {
+                const container = document.getElementById('mainScrollContainer');
+                const sections = [...container.querySelectorAll('.landing-section, .video-section')];
+                const index = sections.findIndex(section => section.dataset.videoId === id);
+                if (index < 0) return;
+                scrollToVideo(index, false);
+                container.scrollTo({ top: sections[index].offsetTop, behavior: 'instant' });
+            });
+            if (window.ReelFolioColors) registerSectionColors();
+            else window.addEventListener('reelfolio:colorsready', registerSectionColors, { once: true });
 
             document.querySelectorAll('.landing-action, .content-link').forEach(button => {
                 const restX = parseFloat(getComputedStyle(button).getPropertyValue('--landing-light-x')) || 72;
@@ -4175,7 +4192,7 @@
             document.querySelectorAll('.landing-section video, .video-section video').forEach(prepareVideoFirstFrame);
 
             // Initialize background with landing color
-            setBackgroundColor(landing.bgColor || '#091A12');
+            setBackgroundColor(landing.bgColor || '#091A12', 'landing');
 
             // Initialize Observer for single container
             initObserver();
@@ -4262,7 +4279,7 @@
                         // Update background color based on the current section
                         // But skip updates if we are in the middle of a "warp" transition
                         const bgColor = entry.target.getAttribute('data-bg-color');
-                        if (bgColor && !isWarping) setBackgroundColor(bgColor);
+                        if (bgColor && !isWarping && entry.intersectionRatio >= 0.7) setBackgroundColor(bgColor, entry.target.dataset.videoId);
 
                         // Update arrow positioning for landscape/portrait
                         const navArrows = document.getElementById('fixedNavArrows');
@@ -5801,7 +5818,7 @@
 
                 // Defer heavy scroll to after the next paint frame
                 requestAnimationFrame(() => {
-                    smartScrollTo(0, container, targetColor);
+                    smartScrollTo(0, container, targetColor, 'landing');
                     updateLikeButtonForCurrentVideo('landing', false, true);
                 });
 
@@ -5839,7 +5856,7 @@
             if (sectionIndex >= 0) {
                 const targetTop = sectionIndex * getSectionHeight();
                 const targetColor = section.getAttribute('data-bg-color');
-                smartScrollTo(targetTop, container, targetColor);
+                smartScrollTo(targetTop, container, targetColor, section.dataset.videoId);
 
                 // Update like button for target section immediately
                 const videoId = section.getAttribute('data-video-id');
@@ -5849,7 +5866,7 @@
 
         // Smart scroll function - uses 'Stitched Glide' for distant jumps
         // Smart scroll function - uses 'Warp Zoom' for distant jumps
-        function smartScrollTo(targetTop, container, targetColor = null) {
+        function smartScrollTo(targetTop, container, targetColor = null, sectionId = null) {
             const currentTop = container.scrollTop;
             const distance = Math.abs(targetTop - currentTop);
             const sectionHeight = getSectionHeight();
@@ -5863,7 +5880,7 @@
 
                 // Provide direct background transition
                 if (targetColor) {
-                    setBackgroundColor(targetColor);
+                    setBackgroundColor(targetColor, sectionId);
                 }
 
                 // 1. Engage Warp: Blur, shrink, and fade to simulate speed/depth
@@ -5932,7 +5949,7 @@
                 isWarping = true; // Block observer updates during scroll
 
                 // Manually update BG since observer is blocked
-                if (targetColor) setBackgroundColor(targetColor);
+                if (targetColor) setBackgroundColor(targetColor, sectionId);
 
                 const originalSnapType = container.style.scrollSnapType;
                 container.style.scrollSnapType = 'none';

@@ -13,8 +13,13 @@ const tick = () => new Promise(resolve => setImmediate(resolve));
 function boot({ mobile = false, hidden = false } = {}) {
     const attrs = new Set(['data-production-environment', 'data-environment-paused']);
     const rootChanges = [], events = new Map(), frames = [], images = [];
+    const listen = (name, fn) => {
+        const previous = events.get(name);
+        events.set(name, (...args) => { previous?.(...args); fn(...args); });
+    };
     let grid, gridWrites = 0, fullscreen = false, mutation;
     const root = {
+        addEventListener: listen,
         setAttribute(key) { attrs.add(key); rootChanges.push(key); },
         toggleAttribute(key, enabled) { enabled ? attrs.add(key) : attrs.delete(key); }
     };
@@ -23,14 +28,15 @@ function boot({ mobile = false, hidden = false } = {}) {
         hidden, documentElement: root,
         body: { classList: { contains: () => fullscreen } },
         getElementById: () => layer,
-        createElementNS: () => ({ classList: { add() {} }, setAttribute() {},
+        createElementNS: () => ({ classList: { add() {}, remove() {} }, setAttribute() {},
+            style: { setProperty() {} }, querySelector: () => null,
             set innerHTML(value) { gridWrites++; this.markup = value; } }),
-        addEventListener: (name, fn) => events.set(name, fn)
+        addEventListener: listen
     };
     const media = { matches: mobile, addEventListener: (name, fn) => events.set('media', fn) };
-    const window = { innerWidth: 1440, innerHeight: 900, addEventListener: (name, fn) => events.set(name, fn) };
+    const window = { innerWidth: 1440, innerHeight: 900, addEventListener: listen };
     const context = {
-        document, window, matchMedia: () => media,
+        document, window, matchMedia: query => query === '(max-width: 600px)' ? media : { matches: false, addEventListener() {} },
         requestAnimationFrame: fn => { frames.push(fn); return frames.length; },
         MutationObserver: class { constructor(fn) { mutation = fn; } observe() {} },
         Image: class { decode() { return new Promise((resolve, reject) => images.push({ image: this, resolve, reject })); } }
