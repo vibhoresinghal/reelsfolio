@@ -1,0 +1,4 @@
+Browser artwork from Browser Logos: https://github.com/alrra/browser-logos
+Source: src/{browser}/{browser}_48x48.png, retrieved 2026-10-27.
+All logos and trademarks belong to their respective owners.
+Project license and attribution: https://github.com/alrra/browser-logos/blob/main/LICENSE

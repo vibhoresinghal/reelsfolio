@@ -108,7 +108,7 @@ export default {
 
                 const sessionMatch = url.pathname.match(/^\/analytics\/sessions\/([^/]+)$/);
                 if (request.method === 'GET' && sessionMatch) {
-                    return handleSessionDetail(decodeURIComponent(sessionMatch[1]), env, headers);
+                    return handleSessionDetail(decodeURIComponent(sessionMatch[1]), env, headers, url.searchParams.get('excludeLocal') === '1');
                 }
 
                 if (request.method === 'GET' && url.pathname === '/analytics/sessions') {
@@ -517,7 +517,34 @@ function arrivalBucket(referrer, landingPath) {
     return 'Direct';
 }
 
+
+// Match URL authorities, not arbitrary occurrences of "localhost" in a URL.
+// No schema change: historical sessions can be filtered from their saved URLs.
+function localSessionSql(alias = '') {
+    const prefix = alias ? alias + '.' : '';
+    return '(' + ['landing_path','referrer'].map(column => {
+        const value = "LOWER(COALESCE(" + prefix + column + ", ''))";
+        return ['http://','https://'].flatMap(scheme => ['localhost','127.0.0.1','[::1]'].map(host => {
+            const root = scheme + host;
+            return "(SUBSTR(" + value + ", 1, " + root.length + ") = '" + root + "' AND SUBSTR(" + value + ", " + (root.length + 1) + ", 1) IN ('', '/', ':', '?', '#'))";
+        })).join(' OR ');
+    }).join(' OR ') + ')';
+}
+function analyticsPrepare(env, sql, excludeLocal) {
+    if (!excludeLocal) return env.ANALYTICS.prepare(sql);
+    const scoped = sql.replace(/FROM sessions\b/g,'FROM report_sessions').replace(/FROM events\b/g,'FROM report_events');
+    return env.ANALYTICS.prepare(`WITH report_sessions AS (
+        SELECT * FROM sessions WHERE NOT ${localSessionSql()}
+    ), report_events AS (
+        SELECT e.* FROM events e WHERE NOT EXISTS (
+            SELECT 1 FROM sessions local WHERE local.id = e.session_id AND ${localSessionSql('local')}
+        )
+    ) ${scoped}`);
+}
+
 async function handleOverview(url, env, headers) {
+    const excludeLocal = url.searchParams.get('excludeLocal') === '1';
+    const prepare = sql => analyticsPrepare(env,sql,excludeLocal);
     const range = url.searchParams.get('range') || '7d';
     const tzOffset = timezoneOffset(url);
     const tzModifier = `${-tzOffset} minutes`;
@@ -538,20 +565,21 @@ async function handleOverview(url, env, headers) {
         daily,
         referrers,
         load,
+        localVisits,
     ] = await env.ANALYTICS.batch([
-        env.ANALYTICS.prepare('SELECT COUNT(*) AS n FROM sessions WHERE started_at >= ?').bind(since),
-        env.ANALYTICS.prepare(`
+        prepare('SELECT COUNT(*) AS n FROM sessions WHERE started_at >= ?').bind(since),
+        prepare(`
             SELECT COUNT(*) AS n FROM (
                 SELECT ${visitorKey} AS vid FROM sessions WHERE started_at >= ? GROUP BY vid
             )
         `).bind(since),
-        env.ANALYTICS.prepare(`
+        prepare(`
             SELECT COUNT(*) AS n FROM (
                 SELECT ${visitorKey} AS vid FROM sessions
                 WHERE started_at >= ? AND started_at < ? GROUP BY vid
             )
         `).bind(prevSince, prevUntil),
-        env.ANALYTICS.prepare(`
+        prepare(`
             SELECT json_extract(payload, '$.videoId') AS videoId, COUNT(*) AS n
             FROM events
             WHERE action = 'video_view' AND ts >= ? AND json_extract(payload, '$.videoId') IS NOT NULL
@@ -559,7 +587,7 @@ async function handleOverview(url, env, headers) {
             ORDER BY n DESC
             LIMIT 8
         `).bind(since),
-        env.ANALYTICS.prepare(`
+        prepare(`
             SELECT json_extract(payload, '$.videoId') AS videoId,
                    SUM(json_extract(payload, '$.seconds')) AS seconds
             FROM events
@@ -568,12 +596,12 @@ async function handleOverview(url, env, headers) {
             ORDER BY seconds DESC
             LIMIT 8
         `).bind(since),
-        env.ANALYTICS.prepare(`
+        prepare(`
             SELECT SUM(json_extract(payload, '$.seconds')) AS seconds
             FROM events
             WHERE action = 'video_heartbeat' AND ts >= ? AND ts < ?
         `).bind(prevSince, prevUntil),
-        env.ANALYTICS.prepare(`
+        prepare(`
             SELECT json_extract(payload, '$.label') AS label, COUNT(*) AS n
             FROM events
             WHERE action = 'outbound_click' AND ts >= ?
@@ -581,25 +609,25 @@ async function handleOverview(url, env, headers) {
             ORDER BY n DESC
             LIMIT 8
         `).bind(since),
-        env.ANALYTICS.prepare(`
+        prepare(`
             SELECT json_extract(payload, '$.label') AS label, COUNT(*) AS n
             FROM events
             WHERE action = 'outbound_click' AND ts >= ? AND ts < ?
             GROUP BY label
         `).bind(prevSince, prevUntil),
-        env.ANALYTICS.prepare(`
+        prepare(`
             SELECT AVG(
                 CASE WHEN ended_at > started_at THEN ended_at ELSE started_at END - started_at
             ) AS ms
             FROM sessions WHERE started_at >= ?
         `).bind(since),
-        env.ANALYTICS.prepare(`
+        prepare(`
             SELECT AVG(
                 CASE WHEN ended_at > started_at THEN ended_at ELSE started_at END - started_at
             ) AS ms
             FROM sessions WHERE started_at >= ? AND started_at < ?
         `).bind(prevSince, prevUntil),
-        env.ANALYTICS.prepare(`
+        prepare(`
             SELECT strftime('%Y-%m-%d', started_at / 1000, 'unixepoch', ?) AS day,
                    COUNT(DISTINCT ${visitorKey}) AS n
             FROM sessions
@@ -607,17 +635,18 @@ async function handleOverview(url, env, headers) {
             GROUP BY day
             ORDER BY day
         `).bind(tzModifier, since),
-        env.ANALYTICS.prepare(`
+        prepare(`
             SELECT referrer, landing_path, COUNT(*) AS n
             FROM sessions
             WHERE started_at >= ?
             GROUP BY referrer, landing_path
         `).bind(since),
-        env.ANALYTICS.prepare(`
+        prepare(`
             SELECT AVG(load_ms) AS load
             FROM sessions
             WHERE started_at >= ? AND load_ms IS NOT NULL
         `).bind(since),
+        env.ANALYTICS.prepare(`SELECT COUNT(*) AS n FROM sessions WHERE started_at >= ? AND ${localSessionSql()}`).bind(since),
     ]);
 
     const watchRows = watch.results || [];
@@ -640,6 +669,8 @@ async function handleOverview(url, env, headers) {
 
     return json({
         range,
+        localExcluded: excludeLocal,
+        localVisitCount: localVisits.results[0]?.n || 0,
         visits: visits.results[0]?.n || 0,
         visitors: visitorCount,
         watchSeconds,
@@ -799,7 +830,8 @@ async function handleSessionList(url, env, headers) {
     const offset = Math.max(0, parseInt(url.searchParams.get('offset') || '0', 10) || 0);
     const device = cleanText(url.searchParams.get('device') || '', 16);
 
-    let where = 's.started_at >= ?';
+    const excludeLocal = url.searchParams.get('excludeLocal') === '1';
+    let where = 's.started_at >= ?' + (excludeLocal ? ' AND NOT ' + localSessionSql('s') : '');
     const binds = [since];
     if (['phone', 'desktop', 'tablet'].includes(device)) {
         where += ' AND s.device = ?';
@@ -847,9 +879,10 @@ async function handleSessionList(url, env, headers) {
     const sessions = await decorateGuests(env.ANALYTICS, (rows.results || []).map((row) => ({
         ...row,
         last_payload: safeParse(row.last_payload),
-    })));
+    })), excludeLocal);
 
     return json({
+        localExcluded: excludeLocal,
         sessions: await attachPaths(env.ANALYTICS, sessions),
         total: count?.n || 0,
         limit,
@@ -871,6 +904,21 @@ async function attachPaths(db, sessions) {
         ORDER BY session_id, first_ts
     `).bind(...ids).all();
 
+    const reactions = await db.prepare(`
+        SELECT session_id, videoId, liked, ts, id AS eventId FROM (
+            SELECT session_id, json_extract(payload, '$.videoId') AS videoId,
+                json_extract(payload, '$.liked') AS liked, ts, id,
+                ROW_NUMBER() OVER (PARTITION BY session_id, json_extract(payload, '$.videoId') ORDER BY ts DESC, id DESC) AS rank
+            FROM events WHERE session_id IN (${placeholders}) AND action = 'like_toggle'
+                AND json_extract(payload, '$.videoId') IS NOT NULL
+        ) WHERE rank = 1
+    `).bind(...ids).all();
+    const reactionsBySession = new Map();
+    for (const row of reactions.results || []) {
+        if (!reactionsBySession.has(row.session_id)) reactionsBySession.set(row.session_id, []);
+        reactionsBySession.get(row.session_id).push({videoId:row.videoId,liked:row.liked===1,ts:row.ts,eventId:row.eventId});
+    }
+
     const byId = new Map();
     for (const row of rows.results || []) {
         if (!byId.has(row.session_id)) byId.set(row.session_id, []);
@@ -880,6 +928,7 @@ async function attachPaths(db, sessions) {
     return sessions.map((session) => ({
         ...session,
         path: byId.get(session.id) || [],
+        reactions: reactionsBySession.get(session.id) || [],
     }));
 }
 
@@ -892,7 +941,7 @@ function rangesOverlap(a, b) {
         && b.started_at < (a.ended_at || a.started_at);
 }
 
-async function decorateGuests(db, sessions) {
+async function decorateGuests(db, sessions, excludeLocal = false) {
     if (!sessions.length) return sessions;
 
     const firsts = await db.prepare(`
@@ -913,6 +962,7 @@ async function decorateGuests(db, sessions) {
         SELECT id, started_at, ended_at, COALESCE(NULLIF(visitor_id, ''), id) AS vid
         FROM sessions
         WHERE COALESCE(NULLIF(visitor_id, ''), id) IN (${placeholders})
+          ${excludeLocal ? 'AND NOT ' + localSessionSql() : ''}
         ORDER BY started_at ASC
     `).bind(...vids).all();
 
@@ -936,13 +986,13 @@ async function decorateGuests(db, sessions) {
     });
 }
 
-async function handleSessionDetail(sessionId, env, headers) {
+async function handleSessionDetail(sessionId, env, headers, excludeLocal = false) {
     if (!sessionIdOk(sessionId)) {
         return json({ error: 'Invalid session' }, 400, headers);
     }
 
     const session = await env.ANALYTICS.prepare(
-        'SELECT * FROM sessions WHERE id = ?'
+        'SELECT * FROM sessions WHERE id = ?' + (excludeLocal ? ' AND NOT ' + localSessionSql() : '')
     ).bind(sessionId).first();
 
     if (!session) return json({ error: 'Not found' }, 404, headers);
@@ -952,14 +1002,15 @@ async function handleSessionDetail(sessionId, env, headers) {
         FROM events
         WHERE session_id = ?
         ORDER BY ts ASC
-        LIMIT 400
+        LIMIT 401
     `).bind(sessionId).all();
 
-    const [decorated] = await decorateGuests(env.ANALYTICS, [session]);
+    const [decorated] = await decorateGuests(env.ANALYTICS, [session], excludeLocal);
 
     return json({
         session: decorated || session,
-        events: (events.results || []).map((event) => ({
+        eventsTruncated: (events.results || []).length > 400,
+        events: (events.results || []).slice(0,400).map((event) => ({
             ...event,
             payload: safeParse(event.payload),
         })),
