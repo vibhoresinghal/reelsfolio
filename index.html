@@ -3656,11 +3656,12 @@
                 ts: Date.now(),
                 ...(data || {}),
             };
-            setTimeout(() => {
-                try {
-                    navigator.sendBeacon(_analyticsWorkerUrl + '/events', JSON.stringify(event));
-                } catch (_) { /* worker may still be deploying */ }
-            }, 0);
+            // Queue immediately: a pagehide or outbound click may be the last task.
+            const body = JSON.stringify(event);
+            try {
+                if (navigator.sendBeacon(_analyticsWorkerUrl + '/events', body)) return;
+            } catch (_) { /* Fall back when beacon is unavailable. */ }
+            fetch(_analyticsWorkerUrl + '/events', {method:'POST', body, keepalive:true}).catch(() => {});
         }
 
         function flushWatch() {

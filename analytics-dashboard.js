@@ -48,7 +48,8 @@ try {
     token = saved || sessionStorage.getItem(TOKEN_KEY) || '';
     if (token) $('remember').checked = !!saved;
 } catch (_) {}
-let range = '7d', overview = null, sessions = [], totalVisits = 0;
+let range = '7d', overview = null, sessions = [], totalVisits = 0, totalLikes = null;
+let sessionsLoading = false, sessionsError = '';
 let boardController, detailController, selectedId = '', lastUpdated = 0;
 let chartDays = [], returnFocus = null;
 let loadedRange = '7d', excludeLocal = true, loadedExcludeLocal = true;
@@ -172,7 +173,7 @@ function watchLabel(value) {
 const milliseconds = value => present(value) ? `${(Number(value) / 1000).toFixed(2)}s` : '\u2014';
 const stamp = value => value ? new Date(value).toLocaleString('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit', hour12:true}) : 'Time unavailable';
 const SOURCE_HELP = 'No referring site was shared. This can happen with a typed address, bookmark, private message, or browser privacy settings.';
-const trafficLabel = label => /^(source not shared|direct(?:\s*\/\s*unknown)?|unknown(?: source)?|)$/i.test(String(label || '').trim()) ? 'Direct / unknown' : (socialSource(label)?.[0] || String(label));
+const trafficLabel = label => /^(source not shared|direct(?:\s*\/\s*unknown)?|unknown(?: source)?|)$/i.test(String(label || '').trim()) ? 'Direct' : (socialSource(label)?.[0] || String(label));
 const dateKey = date => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 const shortDate = date => date.toLocaleDateString(undefined, {month:'short', day:'numeric'});
 function sourceLabel(referrer, path) {
@@ -187,7 +188,7 @@ function sourceLabel(referrer, path) {
     if (social) return social[0];
     if (['localhost','127.0.0.1'].includes(host)) return 'Local';
     if (host) return host;
-    return ['localhost','127.0.0.1'].includes(hostOf(path)) ? 'Local' : 'Direct / unknown';
+    return ['localhost','127.0.0.1'].includes(hostOf(path)) ? 'Local' : 'Direct';
 }
 function visitStatus(s) {
     if (s.is_tab) return '<span class="badge tab">Another tab</span>';
@@ -198,7 +199,7 @@ function sessionDuration(s) { return watchLabel(Math.max(0, ((s.ended_at || s.st
 function delta(value) {
     if (range === 'all' || !present(value)) return '';
     const n = Number(value);
-    return `<span class="delta ${n > 0 ? 'up' : n < 0 ? 'down' : ''}">${n > 0 ? icon('arrow-up') : n < 0 ? icon('arrow-down') : ''} ${Math.abs(n).toLocaleString(undefined,{maximumFractionDigits:1})}%<span class="delta-comparison"> vs prior period</span></span>`;
+    return `<span title="Compared with the previous period" class="delta ${n > 0 ? 'up' : n < 0 ? 'down' : ''}">${n > 0 ? icon('arrow-up') : n < 0 ? icon('arrow-down') : ''} ${Math.abs(n).toLocaleString(undefined,{maximumFractionDigits:1})}%<span class="sr-only"> vs prior period</span></span>`;
 }
 function syncTrafficScope() {
     $('excludeLocal').setAttribute('aria-checked',String(excludeLocal));
@@ -210,7 +211,7 @@ function setPeriod() {
     const end = new Date(), start = new Date(end);
     if (range === 'today') start.setHours(0,0,0,0);
     else start.setDate(start.getDate() - (range === '30d' ? 30 : 7));
-    $('periodContext').textContent = range === 'all' ? labels[range] : `${shortDate(start)} – ${shortDate(end)} · vs prior period`;
+    $('periodContext').textContent = range === 'all' ? '' : range === 'today' ? shortDate(end) : `${shortDate(start)} – ${shortDate(end)}`;
     for (const button of $('ranges').children) button.setAttribute('aria-pressed', String(button.dataset.range === range));
 }
 async function api(path, signal) {
@@ -230,11 +231,19 @@ function reportError(error) {
     $('errorBanner').hidden = false;
     $('freshness').textContent = lastUpdated ? `Showing data from ${stamp(lastUpdated)}` : 'Data unavailable';
 }
+const PROJECT_ORDER = ['landing','t1v1','t1v2','t1v3','t1v4','t2v1','t4v1','t4v2','t4v3','t3v1'];
 function projectsData() {
     const map = new Map();
-    const get = id => { const key = id === 'landing-video' ? 'landing' : id; if (!map.has(key)) map.set(key,{id:key, views:null, seconds:null, average:null}); return map.get(key); };
+    const get = id => { const key = id === 'landing-video' ? 'landing' : id; if (!map.has(key)) map.set(key,{id:key, views:null, seconds:null, average:null, likes:0}); return map.get(key); };
     for (const row of overview?.clips || []) { const p = get(row.videoId); p.views = (p.views || 0) + (Number(row.n) || 0); }
     for (const row of overview?.watch || []) { const p = get(row.videoId); p.seconds = (p.seconds || 0) + (Number(row.seconds) || 0); }
+    if (range === 'all') {
+        for (const project of map.values()) project.likes = totalLikes === null ? null : Number(totalLikes[project.id]) || 0;
+    } else if (Array.isArray(overview?.newLikes)) {
+        for (const row of overview.newLikes) get(row.videoId).likes += Number(row.n) || 0;
+    } else {
+        for (const project of map.values()) project.likes = null;
+    }
     return [...map.values()].map(p => ({...p, average:p.views > 0 && present(p.seconds) ? p.seconds / p.views : null}));
 }
 function renderOverview() {
@@ -245,7 +254,7 @@ function renderOverview() {
         ['Average visit', esc(watchLabel(present(o.avgSessionMs) ? o.avgSessionMs / 1000 : null)), d.avgSession, 'First to last recorded event', 'visits'],
         ['Link clicks', metricNumber(o.outboundTotal), d.outbound, 'Resume, socials & project links', 'traffic']
     ];
-    $('kpis').innerHTML = metrics.map(([label,value,change,caption,view]) => `<button class="metric" data-go="${view}"><p class="metric-label">${label}</p><span class="metric-action">${icon('arrow-up-right')}</span><strong class="metric-value numeric">${value}</strong>${delta(change)}<p class="metric-caption">${caption}</p></button>`).join('');
+    $('kpis').innerHTML = metrics.map(([label,value,change,caption,view]) => `<button class="metric" data-go="${view}" title="${esc(caption)}"><p class="metric-label">${label}</p><span class="metric-action">${icon('arrow-up-right')}</span><strong class="metric-value numeric">${value}</strong>${delta(change)}</button>`).join('');
     $('overviewSubtitle').textContent = o.visitors > 0 ? `${number(o.visitors)} recognized browsers visited your portfolio in this period.` : 'No visitors recorded in this period yet.';
     renderChart();
     const outbound = new Map((o.outbound || []).map(r=>[String(r.label).toLowerCase(),r]));
@@ -253,15 +262,16 @@ function renderOverview() {
         const item = outbound.get(key); outbound.delete(key);
         return {label:({resume:'Resume',linkedin:'LinkedIn',email:'Email',x:'X'})[key], n:item?.n ?? null};
     }).concat([...outbound.values()]).filter(r=>present(r.n));
-    $('outbound').innerHTML = outboundRows.length ? `<div class="outbound-grid">${outboundRows.map(r=>`<div class="outbound-item"><span class="channel-name">${channelIcon(r.label)}<span>${esc(r.label)}</span></span><span class="outbound-count"><b class="numeric">${metricNumber(r.n)}</b><span>${Number(r.n)===1?'click':'clicks'}</span></span></div>`).join('')}</div>` : '<p class="empty">No link clicks reported.</p>';
+    $('outbound').innerHTML = outboundRows.length ? `<div class="outbound-grid">${outboundRows.map(r=>`<div class="outbound-item"><span class="channel-name">${channelIcon(r.label)}<span>${esc(r.label)}</span></span><span class="outbound-count"><b class="numeric">${metricNumber(r.n)}</b><span>${Number(r.n)===1?'click':'clicks'}</span></span></div>`).join('')}</div>` : '<p class="empty">No link clicks</p>';
     const sources = groupedSources(o.sources || []), sourceTotal = sources.reduce((sum,r)=>sum+(Number(r.n)||0),0);
-    $('sources').innerHTML = sources.length ? sources.map(r=>`<button class="bar-row" data-source="${esc(trafficLabel(r.label))}" aria-label="View visitors from ${esc(trafficLabel(r.label))}"><span class="source-row-icon">${channelIcon(trafficLabel(r.label))}</span><span class="source-row-body"><span class="bar-label"><span>${esc(trafficLabel(r.label))}</span><span class="source-numbers"><strong class="numeric">${number(r.n)}</strong> ${Number(r.n)===1?'visit':'visits'}<span class="source-percentage">${sourceTotal ? Math.round(r.n/sourceTotal*100) : 0}%</span></span></span><span class="bar-track"><span class="bar-fill" style="--share:${sourceTotal ? Math.max(0,Math.min(100,r.n/sourceTotal*100)) : 0}%"></span></span></span><span class="source-drill">${icon('chevron-right')}</span></button>`).join('') : '<p class="empty">Arrival sources will appear after your first visits.</p>';
+    $('sources').innerHTML = sources.length ? sources.map(r=>`<button class="bar-row" data-source="${esc(trafficLabel(r.label))}" aria-label="View visitors from ${esc(trafficLabel(r.label))}"><span class="source-row-icon">${channelIcon(trafficLabel(r.label))}</span><span class="source-row-body"><span class="bar-label"><span>${esc(trafficLabel(r.label))}</span><span class="source-numbers"><strong class="numeric">${number(r.n)}</strong> ${Number(r.n)===1?'visit':'visits'}<span class="source-percentage">${sourceTotal ? Math.round(r.n/sourceTotal*100) : 0}%</span></span></span><span class="bar-track"><span class="bar-fill" style="--share:${sourceTotal ? Math.max(0,Math.min(100,r.n/sourceTotal*100)) : 0}%"></span></span></span><span class="source-drill">${icon('chevron-right')}</span></button>`).join('') : '<p class="empty">No sources</p>';
     const best = projectsData().filter(p=>p.id!=='landing' && p.seconds>0).sort((a,b)=>b.seconds-a.seconds)[0];
-    const topSource = sources.filter(r => trafficLabel(r.label) !== 'Direct / unknown').sort((a,b)=>b.n-a.n)[0];
-    $('insights').innerHTML = `<div class="quick-insight"><span>Most watched project</span><strong>${best ? esc(clipName(best.id)) : 'Your next standout starts here'}</strong><span>${best ? esc(watchLabel(best.seconds)) + ' of recorded attention' : 'Project insights appear as people watch.'}</span>${best ? `<button class="text-button" data-project="${esc(best.id)}">Explore its visitors ${icon('arrow-right')}</button>` : ''}</div><div class="quick-insight"><span>Leading known source</span><strong>${topSource ? esc(trafficLabel(topSource.label)) : 'No known sources yet'}</strong><button class="text-button" data-go="traffic">Explore traffic ${icon('arrow-right')}</button></div><div class="quick-insight"><span>Average page load</span><strong class="numeric">${milliseconds(o.load?.load)}</strong><span>Browser load event, not video readiness</span></div>`;
+    const topSource = sources.filter(r => trafficLabel(r.label) !== 'Direct').sort((a,b)=>b.n-a.n)[0];
+    $('insights').innerHTML = `<div class="quick-insight"><span>Most watched</span><strong>${best ? esc(clipName(best.id)) : '—'}</strong>${best ? `<span>${esc(watchLabel(best.seconds))}</span><button class="text-button" data-project="${esc(best.id)}">Visitors ${icon('arrow-right')}</button>` : ''}</div><div class="quick-insight"><span>Top known source</span><strong>${topSource ? esc(trafficLabel(topSource.label)) : '—'}</strong><button class="text-button" data-go="traffic">Traffic ${icon('arrow-right')}</button></div><div class="quick-insight" title="Average browser load event time; does not measure video readiness"><span>Avg. page load</span><strong class="numeric">${milliseconds(o.load?.load)}</strong></div>`;
     const top = projectsData().filter(p=>p.id!=='landing' && p.seconds>0).sort((a,b)=>b.seconds-a.seconds).slice(0,3);
-    $('topProjects').innerHTML = top.length ? top.map((p,i)=>`<button class="preview-row" data-project="${esc(p.id)}"><span class="rank">0${i+1}</span><span class="preview-main"><span class="preview-name">${esc(clipName(p.id))}</span><span class="bar-track"><span class="bar-fill" style="--share:${p.seconds/top[0].seconds*100}%"></span></span></span><span class="preview-value numeric">${esc(watchLabel(p.seconds))}</span></button>`).join('') : '<p class="empty">Your most-watched projects will appear here.</p>';
-    $('recentVisitors').innerHTML = guestGroups().slice(0,3).map(group=>`<button class="preview-row" data-session="${esc(group.key)}" aria-haspopup="dialog">${browserBadge(group.latest.browser,group.latest.os)}<span class="preview-main"><span class="preview-name">${esc(guestName(group))}</span><span class="preview-meta">${esc(sourceLabel(group.latest.referrer,group.latest.landing_path))} · ${esc(stamp(group.latest.started_at))}</span></span><span class="preview-value">${icon('chevron-right')}</span></button>`).join('') || '<p class="empty">Visitor journeys will appear after the first visit.</p>';
+    $('topProjects').innerHTML = top.length ? top.map((p,i)=>`<button class="preview-row" data-project="${esc(p.id)}"><span class="rank">0${i+1}</span><span class="preview-main"><span class="preview-name">${esc(clipName(p.id))}</span><span class="bar-track"><span class="bar-fill" style="--share:${p.seconds/top[0].seconds*100}%"></span></span></span><span class="preview-value numeric">${esc(watchLabel(p.seconds))}</span></button>`).join('') : '<p class="empty">No project activity</p>';
+    $('recentVisitors').innerHTML = guestGroups().slice(0,3).map(group=>`<button class="preview-row" data-session="${esc(group.key)}" aria-haspopup="dialog">${browserBadge(group.latest.browser,group.latest.os)}<span class="preview-main"><span class="preview-name">${esc(guestName(group))}</span><span class="preview-meta">${esc(sourceLabel(group.latest.referrer,group.latest.landing_path))} · ${esc(stamp(group.latest.started_at))}</span></span><span class="preview-value">${icon('chevron-right')}</span></button>`).join('') || '<p class="empty">No visitors</p>';
+    if (sessionsLoading || sessionsError) $('recentVisitors').innerHTML = `<p class="empty" role="status">${sessionsLoading ? 'Loading visitors…' : esc(sessionsError)}</p>`;
 
 }
 function fillDays(daily) {
@@ -280,7 +290,7 @@ function renderChart() {
     const max = Math.max(1,...chartDays.map(d=>d.n));
     const points = chartDays.map((d,i)=>({x:chartDays.length===1?250:10+i*480/(chartDays.length-1),y:145-d.n/max*125}));
     const path = points.map((p,i)=>`${i?'L':'M'}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ');
-    $('chart').innerHTML = `<div class="chart-readout" id="chartReadout" aria-live="polite"></div><svg class="chart-plot" id="chartPlot" viewBox="0 0 500 160" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#b2c795" stop-opacity=".18"/><stop offset="1" stop-color="#b2c795" stop-opacity="0"/></linearGradient></defs><path d="M0 20H500M0 82H500M0 145H500" stroke="#304735" stroke-width="1" stroke-dasharray="3 5" fill="none"/><path d="${path}L${points.at(-1).x},160L${points[0].x},160Z" fill="url(#chartFill)"/><path d="${path}" fill="none" stroke="#b2c795" stroke-width="2.5" vector-effect="non-scaling-stroke"/><line id="chartGuide" y1="15" y2="145" stroke="#bacda1" stroke-width="1" stroke-dasharray="3 4" opacity=".35"/><circle id="chartDot" r="4" fill="#e3e7cc" stroke="#13261b" stroke-width="2"/></svg><div class="chart-axis"><span>${esc(chartDays[0].label)}</span><span>${max} max / day</span><span>${esc(chartDays.at(-1).label)}</span></div><label class="sr-only chart-helper" for="chartSlider">${chartDays.length>1?'Tap or hover to explore · Arrow keys when focused':'Today\u2019s recorded visitors'}</label><input class="chart-slider" id="chartSlider" type="range" min="0" max="${chartDays.length-1}" value="${chartDays.length-1}" step="1" ${chartDays.length===1?'disabled':''}>`;
+    $('chart').innerHTML = `<div class="chart-readout" id="chartReadout" aria-live="polite"></div><svg class="chart-plot" id="chartPlot" viewBox="0 0 500 160" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#b2c795" stop-opacity=".18"/><stop offset="1" stop-color="#b2c795" stop-opacity="0"/></linearGradient></defs><path d="M0 20H500M0 82H500M0 145H500" stroke="#304735" stroke-width="1" stroke-dasharray="3 5" fill="none"/><path d="${path}L${points.at(-1).x},160L${points[0].x},160Z" fill="url(#chartFill)"/><path d="${path}" fill="none" stroke="#b2c795" stroke-width="2.5" vector-effect="non-scaling-stroke"/><line id="chartGuide" y1="15" y2="145" stroke="#bacda1" stroke-width="1" stroke-dasharray="3 4" opacity=".35"/><circle id="chartDot" r="4" fill="#e3e7cc" stroke="#13261b" stroke-width="2"/></svg><div class="chart-axis"><span>${esc(chartDays[0].label)}</span>${chartDays.length > 1 ? `<span>${esc(chartDays.at(-1).label)}</span>` : ''}</div><label class="sr-only chart-helper" for="chartSlider">${chartDays.length>1?'Tap or hover to explore · Arrow keys when focused':'Today\u2019s recorded visitors'}</label><input class="chart-slider" id="chartSlider" type="range" min="0" max="${chartDays.length-1}" value="${chartDays.length-1}" step="1" ${chartDays.length===1?'disabled':''}>`;
     function selectDay(index) {
         const i = Math.max(0,Math.min(points.length-1,index)), p = points[i], d = chartDays[i];
         $('chartReadout').innerHTML = `<strong class="numeric">${number(d.n)}</strong><span>${d.n===1?'visitor':'visitors'} on ${esc(d.label)}</span>`;
@@ -293,12 +303,16 @@ function renderChart() {
     selectDay(chartDays.length-1);
 }
 function renderProjects() {
+    const likesLabel = range === 'all' ? 'Total likes' : 'New likes';
+    $('projectLikesHeading').textContent = likesLabel;
+    const likesOption = $('projectSort').querySelector?.('option[value="likes"]');
+    if (likesOption) likesOption.textContent = likesLabel;
     window.AnalyticsSelect?.sync();
-    const key = $('projectSort').value, rows = projectsData().sort((a,b)=>(b[key]??-1)-(a[key]??-1));
+    const key = $('projectSort').value, rows = projectsData().sort((a,b)=>key === 'website' ? (PROJECT_ORDER.includes(a.id)?PROJECT_ORDER.indexOf(a.id):999)-(PROJECT_ORDER.includes(b.id)?PROJECT_ORDER.indexOf(b.id):999) : (b[key]??-1)-(a[key]??-1));
     const secondsTotal = rows.reduce((sum,p)=>sum+(p.seconds||0),0);
     const headings = document.querySelectorAll('.project-table thead th');
-    headings.forEach((th,i)=> { if (i === {views:1,seconds:2,average:3}[key]) th.setAttribute('aria-sort','descending'); else th.removeAttribute('aria-sort'); });
-    $('projects').innerHTML = rows.length ? rows.map((p,i)=>`<tr data-project="${esc(p.id)}"><th scope="row"><button class="project-name" data-project="${esc(p.id)}"><span class="rank">${String(i+1).padStart(2,'0')}</span>${projectMark(p.id)}<span><strong>${esc(clipName(p.id))}</strong><small>${esc(projectCategory(p.id))}</small></span></button></th><td data-label="Views">${metricNumber(p.views)}</td><td data-label="Watch time">${esc(watchLabel(p.seconds))}</td><td data-label="Watch / view">${esc(watchLabel(p.average))}</td><td class="share-cell" data-label="Watch share">${present(p.seconds) && secondsTotal ? Math.round(p.seconds/secondsTotal*100)+'%' : '—'}<div class="bar-track"><div class="bar-fill" style="--share:${secondsTotal?(p.seconds||0)/secondsTotal*100:0}%"></div></div></td></tr>`).join('') : '<tr><td colspan="5"><div class="empty"><strong>No project activity yet</strong>Try another date range, or check back after your work has been watched.</div></td></tr>';
+    headings.forEach((th,i)=> { if (i === {views:1,likes:2,seconds:3,average:4}[key]) th.setAttribute('aria-sort','descending'); else th.removeAttribute('aria-sort'); });
+    $('projects').innerHTML = rows.length ? rows.map((p,i)=>`<tr data-project="${esc(p.id)}"><th scope="row"><button class="project-name" data-project="${esc(p.id)}"><span class="rank">${String(i+1).padStart(2,'0')}</span>${projectMark(p.id)}<span><strong>${esc(clipName(p.id))}</strong><small>${esc(projectCategory(p.id))}</small></span></button></th><td data-label="Views">${metricNumber(p.views)}</td><td data-label="${likesLabel}" title="${range === 'all' ? 'Lifetime total shown on the website' : 'Recorded like actions in this period, before subtracting unlikes'}"><span class="project-likes${p.likes ? ' has-likes' : ''}">${icon('heart')}${metricNumber(p.likes)}</span></td><td data-label="Watch time">${esc(watchLabel(p.seconds))}</td><td data-label="Watch / view">${esc(watchLabel(p.average))}</td><td class="share-cell" data-label="Watch share">${present(p.seconds) && secondsTotal ? Math.round(p.seconds/secondsTotal*100)+'%' : '—'}<div class="bar-track"><div class="bar-fill" style="--share:${secondsTotal?(p.seconds||0)/secondsTotal*100:0}%"></div></div></td></tr>`).join('') : '<tr><td colspan="6"><div class="empty">No project activity</div></td></tr>';
 }
 const ACTIVE_WINDOW_MS = 2 * 60 * 1000;
 function guestIsActive(group, now = Date.now()) {
@@ -372,6 +386,13 @@ function visitorLikes(visits) {
 }
 
 function renderVisits() {
+    if (sessionsLoading || sessionsError) {
+        $('visitorSummary').innerHTML = '';
+        $('visitCount').textContent = '';
+        $('visits').innerHTML = `<p class="empty" role="status">${sessionsLoading ? 'Loading visitors…' : esc(sessionsError)}</p>`;
+        $('loadMore').hidden = true;
+        return;
+    }
     window.AnalyticsSelect?.sync();
     $('clearSearch').hidden = !$('visitorSearch').value;
     const all = guestGroups(), guests = filteredGuests(), visible = guests.slice(0,guestVisible);
@@ -385,7 +406,7 @@ function renderVisits() {
         const path=matchingVisits(group).flatMap(visit=>visit.path||[]);
         const route=projectChips(path);
         return `<button class="visit-card" data-session="${esc(group.key)}" aria-haspopup="dialog"><span class="visit-heading">${browserBadge(s.browser,s.os)}<span class="visitor-identity"><strong>${esc(guestName(group))}</strong><span class="visit-meta">${esc(stamp(s.started_at))}</span>${activeGuestBadge(group)}</span></span><span class="visit-path">${route}${visitorLikes(matchingVisits(group))}</span><span class="visit-source"><span class="source-name">${channelIcon(sourceLabel(s.referrer,s.landing_path))}${esc(sourceLabel(s.referrer,s.landing_path))}</span><span class="visit-meta">${platformIcon(s.os)||icon(s.device==='phone'||s.device==='tablet'?'phone':'desktop')}${esc([s.os||s.device,s.browser].filter(Boolean).join(' / ')||'Device not reported')}</span></span><span class="visit-count numeric"><span class="visit-count-value">${number(count)}<span class="mobile-count-label"> ${count===1?'visit':'visits'}</span></span><span class="arrow">${icon('chevron-right')}</span></span></button>`;
-    }).join('') : `<div class="empty"><strong>${all.length?'No visitors match these filters':'No visits recorded yet'}</strong>${all.length?'Try another search or clear the filters.':'Try a wider date range, or check back after your next visit.'}${all.length?'<br><button class="soft-button" data-clear="all">Clear filters</button>':''}</div>`;
+    }).join('') : `<div class="empty"><strong>${all.length?'No visitors match these filters':'No visits recorded yet'}</strong>${all.length?'<br><button class="soft-button" data-clear="all">Clear filters</button>':''}</div>`;
     $('loadMore').hidden = guestVisible>=guests.length;
 
     $('visitScope').textContent = `Showing ${number(visible.length)} of ${number(guests.length)} visitors · newest first`;
@@ -421,15 +442,34 @@ async function loadBoard() {
     boardController?.abort();
     const controller = boardController = new AbortController();
     const timeout = setTimeout(()=>controller.abort(),60000);
+    let backgroundStarted = false;
     window.AnalyticsSelect?.close();
     document.querySelectorAll('.view').forEach(view=>{view.inert=true;});
     $('errorBanner').hidden=true; $('refreshBtn').disabled=true;$('excludeLocal').disabled=true; $('deviceFilter').disabled=true;window.AnalyticsSelect?.sync();
     $('dashboardContent').setAttribute('aria-busy','true'); $('freshness').textContent='Updating dashboard...'; $('initialLoading').hidden=!!overview; setPeriod();
     try {
-        const [o,list] = await Promise.all([api(`/analytics/overview?range=${range}&tz=${new Date().getTimezoneOffset()}&excludeLocal=${excludeLocal?'1':'0'}`,controller.signal),fetchGuestSessions(controller.signal)]);
+        // Start independent work together; authentication and the overview do not wait for visitor pagination.
+        const visitorRequest = fetchGuestSessions(controller.signal).then(value=>({value}),error=>({error}));
+        const likesRequest = range === 'all' ? fetch(WORKER+'/likes/all',{signal:controller.signal})
+            .then(response=>{if(!response.ok)throw new Error('Likes unavailable');return response.json();}).catch(()=>null) : Promise.resolve(null);
+        const o = await api(`/analytics/overview?range=${range}&tz=${new Date().getTimezoneOffset()}&excludeLocal=${excludeLocal?'1':'0'}`,controller.signal);
         if (controller!==boardController) return false;
         if(excludeLocal && o.localExcluded !== true) throw localScopeUnavailable();
-        overview=o; sessions=list.sessions||[]; totalVisits=Number(list.total)||0;
+        overview=o; sessions=[]; totalVisits=0; totalLikes=null; sessionsLoading=true; sessionsError='';
+        backgroundStarted = true;
+        Promise.all([
+            visitorRequest.then(result=>{
+                if(controller!==boardController)return;
+                sessionsLoading=false;
+                if(result.error){
+                    sessionsError='Could not load visitors. Try refresh.';
+                    if(result.error.name==='AbortError')result.error=new Error('Visitor loading timed out. Try refresh.');
+                    reportError(result.error);
+                } else { sessions=result.value.sessions||[];totalVisits=Number(result.value.total)||0; }
+                if(overview){renderOverview();renderVisits();}
+            }),
+            likesRequest.then(likes=>{if(controller===boardController && overview){totalLikes=likes;renderProjects();}})
+        ]).catch(error=>{if(controller===boardController)reportError(error);}).finally(()=>clearTimeout(timeout));
         if(loadedRange!==range || loadedExcludeLocal!==excludeLocal)guestVisible=PAGE;loadedRange=range;loadedExcludeLocal=excludeLocal;syncTrafficScope();
         renderAll(); lastUpdated=Date.now(); $('freshness').textContent=`Updated ${new Date(lastUpdated).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}`;
         return true;
@@ -443,6 +483,7 @@ async function loadBoard() {
             if(restored){$('errorMessage').textContent=e.message;$('errorBanner').hidden=false;}
             return restored;
         }
+        controller.abort();
         if (overview) {
             range=loadedRange;excludeLocal=loadedExcludeLocal;writeRoute('replace');
             for (const b of $('ranges').children) b.setAttribute('aria-pressed',String(b.dataset.range===range));
@@ -451,7 +492,7 @@ async function loadBoard() {
         if(e.name==='AbortError') throw new Error('The request timed out. Please try again.');
         throw e;
     } finally {
-        clearTimeout(timeout);
+        if(!backgroundStarted)clearTimeout(timeout);
         if(controller===boardController){document.querySelectorAll('.view').forEach(view=>{view.inert=false;});$('refreshBtn').disabled=false;$('excludeLocal').disabled=false;$('deviceFilter').disabled=false;window.AnalyticsSelect?.sync();$('dashboardContent').setAttribute('aria-busy','false');$('initialLoading').hidden=true;}
     }
 }
@@ -578,7 +619,7 @@ function syncNavLinks() { document.querySelectorAll('[data-view]').forEach(link=
 function writeRoute(mode='push') {
     const url=new URL(location.href);url.hash=currentView;
     for(const [key,value] of Object.entries({range,excludeLocal:excludeLocal?'1':'0',device:$('deviceFilter').value,type:$('visitType').value,q:$('visitorSearch').value,project:projectFilter,source:sourceFilter,sort:$('projectSort').value})) {
-        if(value && !(key==='range'&&value==='7d') && !(key==='sort'&&value==='seconds'))url.searchParams.set(key,value);else url.searchParams.delete(key);
+        if(value && !(key==='range'&&value==='7d') && !(key==='sort'&&value==='website'))url.searchParams.set(key,value);else url.searchParams.delete(key);
     }
     if(url.href!==location.href)history[mode==='replace'?'replaceState':'pushState']({},'',url);
     // Native open-in-new-tab retains the date range and current filters too.
@@ -591,7 +632,7 @@ function readRoute() {
     $('deviceFilter').value=['phone','desktop','tablet'].includes(p.get('device'))?p.get('device'):'';
     $('visitType').value=['returning','active'].includes(p.get('type'))?p.get('type'):'';
     $('visitorSearch').value=p.get('q')||'';projectFilter=p.get('project')||'';sourceFilter=p.get('source')?trafficLabel(p.get('source')):'';
-    $('projectSort').value=['seconds','views','average'].includes(p.get('sort'))?p.get('sort'):'seconds';
+    $('projectSort').value=['website','seconds','views','average','likes'].includes(p.get('sort'))?p.get('sort'):'website';
     window.AnalyticsSelect?.sync();
     setPeriod();setView(Object.hasOwn(viewMeta,url.hash.slice(1))?url.hash.slice(1):'overview',false,false);syncNavLinks();
 }
@@ -616,7 +657,7 @@ function lockRoom() {
     boardController?.abort();boardController=null;dismissDetail();
     if(history.state?.rfVisit)history.replaceState({},'',location.href);
     try {localStorage.removeItem(TOKEN_KEY);sessionStorage.removeItem(TOKEN_KEY);} catch(_) {}
-    token='';overview=null;sessions=[];totalVisits=0;lastUpdated=0;
+    token='';overview=null;sessions=[];totalVisits=0;lastUpdated=0;sessionsLoading=false;sessionsError='';totalLikes=null;
     $('gate').hidden=false;$('app').hidden=true;$('tokenInput').value='';$('gateError').textContent='';$('tokenInput').focus();
 }
 window.AnalyticsSelect?.enhance();

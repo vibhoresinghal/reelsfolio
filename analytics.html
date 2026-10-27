@@ -9,9 +9,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=Momo+Trust+Display&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="analytics-dashboard.css?v=27">
-    <script defer src="analytics-select.js?v=12"></script>
-    <script defer src="analytics-dashboard.js?v=30"></script>
+    <link rel="stylesheet" href="analytics-dashboard.css?v=29">
+    <script defer src="analytics-select.js?v=13"></script>
+    <script defer src="analytics-dashboard.js?v=36"></script>
 </head>
 <body>
     <div class="analytics-environment" aria-hidden="true"><div class="environment-light"></div><div class="environment-foliage"></div></div>
@@ -48,13 +48,13 @@
                 <div id="initialLoading" hidden role="status" aria-label="Loading dashboard"><div class="kpis"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div></div>
                 <section class="view" id="view-overview" aria-label="Overview">
                     <p id="overviewSubtitle" class="sr-only"></p><div class="kpis" id="kpis"></div>
-                    <div class="overview-grid"><section class="card trend-card"><div class="card-head"><div><h2>Visitor activity</h2></div><span class="chart-legend"><i></i> Visitors</span></div><div id="chart"></div></section><section class="card pulse-card"><div class="card-head"><h2>At a glance</h2><span class="small-mark"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></span></div><div id="insights"></div></section></div>
+                    <div class="overview-grid"><section class="card trend-card"><div class="card-head"><div><h2>Visitor activity</h2></div></div><div id="chart"></div></section><section class="card pulse-card"><div class="card-head"><h2>At a glance</h2><span class="small-mark"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></span></div><div id="insights"></div></section></div>
                     <div class="overview-grid equal"><section class="card"><div class="card-head"><div><h2>Standout projects</h2></div><button class="text-button" data-go="projects">All projects <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button></div><div id="topProjects"></div></section><section class="card"><div class="card-head"><div><h2>Recent visitors</h2></div><button class="text-button" data-go="visits">All visitors <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button></div><div id="recentVisitors"></div></section></div>
 
                 </section>
                 <section class="view" id="view-projects" aria-label="Projects" hidden>
-                    <div class="section-intro"><div><h2>Project performance</h2></div><label class="inline-field" for="projectSort">Sort by<select id="projectSort"><option value="seconds">Watch time</option><option value="views">Views</option><option value="average">Watch / view</option></select></label></div>
-                    <div class="card table-card"><div class="table-scroll" role="region" aria-label="Project performance metrics"><table class="project-table"><thead><tr><th scope="col">Project</th><th scope="col">Views</th><th scope="col">Watch time</th><th scope="col">Watch / view</th><th scope="col">Watch share</th></tr></thead><tbody id="projects"></tbody></table></div></div>
+                    <div class="section-intro"><div><h2>Project performance</h2></div><label class="inline-field" for="projectSort">Sort by<select id="projectSort"><option value="website">Website order</option><option value="likes">Total likes</option><option value="seconds">Watch time</option><option value="views">Views</option><option value="average">Watch / view</option></select></label></div>
+                    <div class="card table-card"><div class="table-scroll" role="region" aria-label="Project performance metrics"><table class="project-table"><thead><tr><th scope="col">Project</th><th scope="col">Views</th><th scope="col" id="projectLikesHeading">Total likes</th><th scope="col">Watch time</th><th scope="col">Watch / view</th><th scope="col">Watch share</th></tr></thead><tbody id="projects"></tbody></table></div></div>
 
                 </section>
                 <section class="view" id="view-visits" aria-label="Visitors" hidden>
@@ -68,7 +68,7 @@
 
                 </section>
                 <section class="view" id="view-traffic" aria-label="Traffic" hidden>
-                    <div class="overview-grid equal"><section class="card"><div class="card-head traffic-card-head"><span class="traffic-section-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M18 6 6 18M6 7v11h11"/></svg></span><div><p class="eyebrow">Coming in</p><h2>Where visitors arrive from</h2></div></div><div id="sources"></div></section><section class="card"><div class="card-head traffic-card-head"><span class="traffic-section-icon outgoing" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M6 18 18 6M7 6h11v11"/></svg></span><div><p class="eyebrow">Going further</p><h2>What they click next</h2></div></div><div id="outbound"></div></section></div>
+                    <div class="overview-grid equal"><section class="card"><div class="card-head traffic-card-head"><span class="traffic-section-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M18 6 6 18M6 7v11h11"/></svg></span><div><h2>Sources</h2></div></div><div id="sources"></div></section><section class="card"><div class="card-head traffic-card-head"><span class="traffic-section-icon outgoing" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M6 18 18 6M7 6h11v11"/></svg></span><div><h2>Link clicks</h2></div></div><div id="outbound"></div></section></div>
 
                 </section>
 

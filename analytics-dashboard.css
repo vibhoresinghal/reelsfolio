@@ -693,7 +693,7 @@ select option { background: #102219; }
 /* One complete event history, followed by a visual device summary. */
 .journey-timeline .is-liked p { color: #e5b4c0; }
 .journey-timeline .is-liked .timeline-icon { color: #e5a8b8; background: #37262c; }
-.is-liked .timeline-icon svg { fill: currentColor; }
+
 .journey-timeline .is-unliked .timeline-icon { color: #c39ba6; }
 .device-insights { border-top: 1px solid var(--line); padding-top: 24px; }
 .device-insights > .activity-heading > .ui-icon { width: 18px; color: var(--quiet); }
@@ -756,7 +756,7 @@ select option { background: #102219; }
     .visit-card .no-projects { line-height: 1.5; }
 }
 .visitor-likes { display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; border: 1px solid #d49aaa30; border-radius: 8px; background: #d49aaa0b; color: #e0aebc; font-size: 11px; line-height: 1.4; white-space: nowrap; }
-.visitor-likes .ui-icon { width: 12px; height: 12px; fill: currentColor; }
+
 /* ReelsFolio finish: ink-green surfaces, warm typography and softly edged controls. */
 :root {
     --bg: #050e0a; --surface: #0b1912; --raised: #17291d;
@@ -1004,3 +1004,21 @@ body { background-color: var(--bg); }
 .journey-timeline { margin-top: 24px; }
 @media (max-width:800px), (max-width:1000px) and (hover:none) and (pointer:coarse) { .sidebar { background: #131516f7; } }
 @media (max-width:600px) { .environment-foliage { opacity: .15; } }
+
+.project-likes { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+.project-likes .ui-icon,
+.visitor-likes .ui-icon,
+.journey-timeline .is-liked .timeline-icon .ui-icon,
+.journey-timeline .is-unliked .timeline-icon .ui-icon {
+    width: 18px; height: 18px; flex-shrink: 0;
+    stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+    color: var(--muted); fill: none;
+}
+.project-likes.has-likes .ui-icon,
+.visitor-likes .ui-icon,
+.journey-timeline .is-liked .timeline-icon .ui-icon {
+    color: #ff9fb2; fill: #f43f68;
+}
+@media (max-width: 700px) {
+    .project-table tbody tr { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}

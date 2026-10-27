@@ -43,7 +43,7 @@ test('visitor browser artwork follows the matching visit instead of another visi
 function dashboard(href = 'http://localhost/analytics.html') {
     const elements = new Map();
     function element(id) {
-        if (!elements.has(id)) elements.set(id, { value: id === 'projectSort' ? 'seconds' : '', children: [], hidden: false,
+        if (!elements.has(id)) elements.set(id, { value: id === 'projectSort' ? 'website' : '', children: [], hidden: false,
             textContent: '', innerHTML: '', dataset: {}, attributes: {},
             setAttribute(key,value) { this.attributes[key]=value; }, removeAttribute(key) { delete this.attributes[key]; },
             querySelectorAll() { return []; }, focus() {} });
@@ -71,7 +71,7 @@ test('traffic drill-down uses the same buckets as the analytics service',()=>{
         ['','https://folio.example/?utm_source=Twitter-newsletter','X'],
         ['https://google.com','https://folio.example/?src=LinkedIn-profile','LinkedIn'],
         ['','https://folio.example/?utm_source=NEWSLETTER','newsletter'],
-        ['','https://folio.example/','Direct / unknown'],
+        ['','https://folio.example/','Direct'],
         ['','http://localhost:8000/','Local'],
         ['https://www.google.com/search?q=test','https://folio.example/','google.com']
     ]) assert.equal(app.run(`sourceLabel(${JSON.stringify(referrer)},${JSON.stringify(path)})`),label);
@@ -122,7 +122,7 @@ test('URL navigation restores the section, date range, search, filters and sort'
     app.run('readRoute()');
     assert.equal(app.element('pageTitle').textContent,'Overview');
     assert.equal(app.element('deviceFilter').value,'');
-    assert.equal(app.element('projectSort').value,'seconds');
+    assert.equal(app.element('projectSort').value,'website');
     assert.equal(app.run('range'),'7d');
 });
 
@@ -252,7 +252,7 @@ test('social attribution normalizes known domains without guessing from unrelate
         assert.notEqual(app.run(`channelKind('${label}')`),'website');
     }
     assert.equal(app.run("sourceLabel('https://instagram.com.example.org/','https://folio.example/')"),'instagram.com.example.org');
-    assert.equal(app.run("sourceLabel('','https://folio.example/')"),'Direct / unknown');
+    assert.equal(app.run("sourceLabel('','https://folio.example/')"),'Direct');
     assert.equal(app.run("JSON.stringify(groupedSources([{label:'l.instagram.com',n:2},{label:'instagram.com',n:3}]))"),'[{"label":"Instagram","n":5}]');
 });
 
@@ -271,4 +271,62 @@ test('visitor pagination loads remaining pages concurrently and keeps ordered co
     const result=await app.run('listing');
     assert.equal(result.sessions.map(s=>s.id).join(),'first,80,160,240');
     assert.equal(result.total,257);
+});
+
+
+test('project totals use public lifetime likes independently of visitor reactions and filters', () => {
+    const app=dashboard();
+    app.run(`overview={clips:[{videoId:'t1v1',n:3},{videoId:'landing-video',n:2}],watch:[]};
+        totalLikes={landing:242,t1v1:30}; sessions=[]; range='all'; excludeLocal=true;`);
+    assert.equal(app.run("projectsData().find(p=>p.id==='landing').likes"),242);
+    assert.equal(app.run("projectsData().find(p=>p.id==='t1v1').likes"),30);
+    app.run('renderProjects()');
+    const html=app.element('projects').innerHTML;
+    assert.ok(html.indexOf('Introduction')<html.indexOf('Acquisition'));
+    assert.match(html,/data-label="Total likes"/);
+    app.run('totalLikes=null');
+    assert.equal(app.run("projectsData()[0].likes"),null,'unavailable totals must not display zero');
+});
+
+test('dated project likes use period events and merge intro aliases instead of lifetime totals', () => {
+    const app=dashboard();
+    app.run(`overview={clips:[{videoId:'landing',n:2}],newLikes:[{videoId:'landing',n:2},{videoId:'landing-video',n:1},{videoId:'t1v1',n:5}]};totalLikes={landing:242};range='today';`);
+    assert.equal(app.run("projectsData().find(p=>p.id==='landing').likes"),3);
+    assert.equal(app.run("projectsData().find(p=>p.id==='t1v1').likes"),5);
+    app.run('renderProjects()');
+    assert.equal(app.element('projectLikesHeading').textContent,'New likes');
+});
+
+
+test('overview becomes usable before visitor pagination finishes and late pages cannot overwrite a newer range',async()=>{
+    const app=dashboard();
+    app.run(`renderAll=renderOverview=renderVisits=renderProjects=()=>{};var finishVisitors;
+        api=async()=>({visitors:3,localExcluded:true});
+        fetchGuestSessions=()=>new Promise(resolve=>{finishVisitors=resolve;});`);
+    assert.equal(await app.run('loadBoard()'),true);
+    assert.equal(app.run('overview.visitors'),3);
+    assert.equal(app.run('sessionsLoading'),true);
+    assert.equal(app.element('refreshBtn').disabled,false);
+    app.run(`var oldFinish=finishVisitors; range='today';api=async()=>({visitors:1,localExcluded:true});`);
+    await app.run('loadBoard()');
+    app.run(`oldFinish({sessions:[{id:'stale'}],total:1});`);
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(app.run('sessions.length'),0);
+    app.run(`finishVisitors({sessions:[{id:'current'}],total:1});`);
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(app.run('sessions[0].id'),'current');
+    assert.equal(app.run('sessionsLoading'),false);
+});
+
+test('visitor load failure keeps the usable overview and offers retry instead of showing zero visitors',async()=>{
+    const app=dashboard();
+    app.run(`renderAll=renderOverview=renderProjects=()=>{};
+        api=async()=>({visitors:3,localExcluded:true});
+        fetchGuestSessions=async()=>{throw new Error('Network unavailable');};`);
+    await app.run('loadBoard()');
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(app.run('overview.visitors'),3);
+    assert.equal(app.run('sessionsLoading'),false);
+    assert.match(app.element('visits').innerHTML,/Could not load visitors/);
+    assert.equal(app.element('errorBanner').hidden,false);
 });

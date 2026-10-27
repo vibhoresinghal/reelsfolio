@@ -87,3 +87,9 @@ test('visitor list returns the last recorded reaction per project including unli
     assert.equal(reactions.find(r=>r.videoId==='t1v2').liked,true);
     assert.deepEqual(result.sessions.find(s=>s.id==='public-b').reactions,[]);
 });
+
+test('new likes counts positive events without counting unlikes',async()=>{
+    const result=await worker()('handleOverview','excludeLocal=1');
+    assert.equal(result.newLikes.find(r=>r.videoId==='t1v1').n,1);
+    assert.equal(result.newLikes.find(r=>r.videoId==='t1v2').n,1);
+});

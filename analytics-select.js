@@ -14,13 +14,14 @@
         return: '<path d="M9 4 4 9l5 5M4 9h10a6 6 0 0 1 0 12"/>',
         clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
         play: '<path d="m8 4 12 8-12 8Z"/>',
+        heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0l-1 1-1-1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>',
         sort: '<path d="M4 7h16M4 12h11M4 17h6"/>'
     };
     const svg = name => '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">' + paths[name] + '</svg>';
     const config = {
         deviceFilter: {label:'Device', icon:'screens', options:{'':'screens',phone:'phone',desktop:'desktop',tablet:'tablet'}},
         visitType: {label:'Visitor type', icon:'people', options:{'':'people',returning:'return',active:'clock'}},
-        projectSort: {label:'Sort projects by', icon:'sort', options:{seconds:'clock',views:'play',average:'clock'}},
+        projectSort: {label:'Sort projects by', icon:'sort', options:{website:'sort',likes:'heart',seconds:'clock',views:'play',average:'clock'}},
         guestSession: {label:'Choose a visit', icon:'clock', options:{}}
     };
 

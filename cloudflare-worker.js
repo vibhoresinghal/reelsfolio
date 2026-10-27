@@ -566,6 +566,7 @@ async function handleOverview(url, env, headers) {
         referrers,
         load,
         localVisits,
+        newLikes,
     ] = await env.ANALYTICS.batch([
         prepare('SELECT COUNT(*) AS n FROM sessions WHERE started_at >= ?').bind(since),
         prepare(`
@@ -647,6 +648,13 @@ async function handleOverview(url, env, headers) {
             WHERE started_at >= ? AND load_ms IS NOT NULL
         `).bind(since),
         env.ANALYTICS.prepare(`SELECT COUNT(*) AS n FROM sessions WHERE started_at >= ? AND ${localSessionSql()}`).bind(since),
+        prepare(`
+            SELECT json_extract(payload, '$.videoId') AS videoId, COUNT(*) AS n
+            FROM events WHERE ts >= ? AND action = 'like_toggle'
+                AND json_extract(payload, '$.liked') = 1
+                AND json_extract(payload, '$.videoId') IS NOT NULL
+            GROUP BY videoId
+        `).bind(since),
     ]);
 
     const watchRows = watch.results || [];
@@ -686,6 +694,7 @@ async function handleOverview(url, env, headers) {
         },
         daily: daily.results || [],
         clips: clips.results || [],
+        newLikes: newLikes.results || [],
         watch: watchRows,
         sources: Object.entries(sources)
             .map(([label, n]) => ({ label, n }))
