@@ -142,7 +142,7 @@ test('changing periods aborts the earlier load so late results cannot replace th
     app.run(`renderAll=()=>{};let finishOld;
         api=(path,signal)=>path.includes('overview')?new Promise(resolve=>{finishOld=resolve;}):Promise.resolve({sessions:[],total:0});
         var first=loadBoard();range='30d';
-        api=async path=>path.includes('overview')?{visitors:30}:{sessions:[],total:0};
+        api=async path=>path.includes('overview')?{visitors:30,localExcluded:true}:{sessions:[],total:0,localExcluded:true};
         var second=loadBoard();`);
     await app.run('second');
     app.run('finishOld({visitors:7})');
@@ -159,7 +159,7 @@ test('local traffic scope survives navigation and is sent with session requests'
     app.run("setView('visits')");
     assert.equal(app.location.searchParams.get('excludeLocal'),'1');
     app.run('excludeLocal=false;writeRoute()');
-    assert.equal(app.location.searchParams.has('excludeLocal'),false);
+    assert.equal(app.location.searchParams.get('excludeLocal'),'0');
 });
 
 test('an older server cannot silently show unfiltered totals with exclusion enabled',async()=>{
@@ -170,7 +170,7 @@ test('an older server cannot silently show unfiltered totals with exclusion enab
     assert.equal(app.run('excludeLocal'),false);
     assert.equal(app.run('overview.visitors'),8);
     assert.equal(app.element('excludeLocal').attributes['aria-checked'],'false');
-    assert.equal(app.location.searchParams.has('excludeLocal'),false);
+    assert.equal(app.location.searchParams.get('excludeLocal'),'0');
 });
 
 test('a filtered shared link can still unlock against an older server with a visible fallback notice',async()=>{
@@ -180,7 +180,7 @@ test('a filtered shared link can still unlock against an older server with a vis
     assert.equal(app.run('excludeLocal'),false);
     assert.equal(app.element('errorBanner').hidden,false);
     assert.match(app.element('errorMessage').textContent,/updated analytics server/);
-    assert.equal(app.location.searchParams.has('excludeLocal'),false);
+    assert.equal(app.location.searchParams.get('excludeLocal'),'0');
 });
 
 test('journey grouping preserves order, project changes, intervening actions and long gaps',()=>{
@@ -233,4 +233,14 @@ test('visitor like badges use the latest reaction across visits and omit removed
     assert.match(html,/1 like/);
     assert.equal(app.run(`visitorLikes([{reactions:[{videoId:'landing',liked:true,ts:1},{videoId:'landing-video',liked:false,ts:2}]}])`),'');
     assert.equal(app.run('visitorLikes([{}])'),'');
+});
+
+test('local visits are excluded by default and an explicit opt-out survives reload',()=>{
+    const app=dashboard();
+    app.run('readRoute()');
+    assert.equal(app.run('excludeLocal'),true);
+    assert.equal(app.run("listParams().get('excludeLocal')"),'1');
+    app.run('excludeLocal=false;writeRoute();readRoute()');
+    assert.equal(app.run('excludeLocal'),false);
+    assert.equal(app.location.searchParams.get('excludeLocal'),'0');
 });

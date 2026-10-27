@@ -51,7 +51,7 @@ try {
 let range = '7d', overview = null, sessions = [], totalVisits = 0;
 let boardController, detailController, selectedId = '', lastUpdated = 0;
 let chartDays = [], returnFocus = null;
-let loadedRange = '7d', excludeLocal = false, loadedExcludeLocal = false;
+let loadedRange = '7d', excludeLocal = true, loadedExcludeLocal = true;
 let guestVisible = PAGE, selectedSessionId = '';
 let currentView = 'overview', projectFilter = '', sourceFilter = '', drawerKeys = [];
 const viewMeta = {
@@ -164,10 +164,7 @@ function delta(value) {
 }
 function syncTrafficScope() {
     $('excludeLocal').setAttribute('aria-checked',String(excludeLocal));
-    const count = overview?.localVisitCount;
-    $('trafficScope').textContent = excludeLocal
-        ? (present(count) ? number(count) + ' local visits excluded' : 'Local visits excluded')
-        : (present(count) && count > 0 ? number(count) + ' local visits included' : 'All traffic included');
+
 }
 function setPeriod() {
     syncTrafficScope();
@@ -177,7 +174,6 @@ function setPeriod() {
     else start.setDate(start.getDate() - (range === '30d' ? 30 : 7));
     $('periodContext').textContent = range === 'all' ? labels[range] : `${shortDate(start)} – ${shortDate(end)} · vs prior period`;
     for (const button of $('ranges').children) button.setAttribute('aria-pressed', String(button.dataset.range === range));
-    $('timezoneLabel').textContent = Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g,' ');
 }
 async function api(path, signal) {
     const response = await fetch(WORKER + path, {headers:{Authorization:`Bearer ${token}`}, signal});
@@ -536,7 +532,7 @@ function routeSnapshot() { return JSON.stringify([currentView,range,excludeLocal
 function syncNavLinks() { document.querySelectorAll('[data-view]').forEach(link=>{const url=new URL(location.href);url.hash=link.dataset.view;link.href=url.href;}); }
 function writeRoute(mode='push') {
     const url=new URL(location.href);url.hash=currentView;
-    for(const [key,value] of Object.entries({range,excludeLocal:excludeLocal?'1':'',device:$('deviceFilter').value,type:$('visitType').value,q:$('visitorSearch').value,project:projectFilter,source:sourceFilter,sort:$('projectSort').value})) {
+    for(const [key,value] of Object.entries({range,excludeLocal:excludeLocal?'1':'0',device:$('deviceFilter').value,type:$('visitType').value,q:$('visitorSearch').value,project:projectFilter,source:sourceFilter,sort:$('projectSort').value})) {
         if(value && !(key==='range'&&value==='7d') && !(key==='sort'&&value==='seconds'))url.searchParams.set(key,value);else url.searchParams.delete(key);
     }
     if(url.href!==location.href)history[mode==='replace'?'replaceState':'pushState']({},'',url);
@@ -545,7 +541,7 @@ function writeRoute(mode='push') {
 }
 function readRoute() {
     const url=new URL(location.href), p=url.searchParams;
-    excludeLocal=p.get('excludeLocal')==='1';
+    excludeLocal=p.get('excludeLocal')!=='0';
     range=['today','7d','30d','all'].includes(p.get('range'))?p.get('range'):'7d';
     $('deviceFilter').value=['phone','desktop','tablet'].includes(p.get('device'))?p.get('device'):'';
     $('visitType').value=['returning','active'].includes(p.get('type'))?p.get('type'):'';
