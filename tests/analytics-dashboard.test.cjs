@@ -255,3 +255,20 @@ test('social attribution normalizes known domains without guessing from unrelate
     assert.equal(app.run("sourceLabel('','https://folio.example/')"),'Direct / unknown');
     assert.equal(app.run("JSON.stringify(groupedSources([{label:'l.instagram.com',n:2},{label:'instagram.com',n:3}]))"),'[{"label":"Instagram","n":5}]');
 });
+
+test('visitor pagination loads remaining pages concurrently and keeps ordered complete results',async()=>{
+    const app=dashboard();
+    app.run(`var requested=[], pending=[];
+        api=async path=>{
+            const offset=Number(new URL(path,'https://test').searchParams.get('offset'));
+            requested.push(offset);
+            if(offset===0)return {sessions:[{id:'first'}],total:257,limit:80,localExcluded:true};
+            return new Promise(resolve=>pending.push(()=>resolve({sessions:[{id:String(offset)}],localExcluded:true})));
+        }; var listing=fetchGuestSessions(new AbortController().signal);`);
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(app.run('requested.join()'),'0,80,160,240');
+    app.run('pending.forEach(resolve=>resolve())');
+    const result=await app.run('listing');
+    assert.equal(result.sessions.map(s=>s.id).join(),'first,80,160,240');
+    assert.equal(result.total,257);
+});

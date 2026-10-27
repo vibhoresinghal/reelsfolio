@@ -397,23 +397,30 @@ function localScopeUnavailable() { return Object.assign(new Error('Local-traffic
 async function fetchGuestSessions(signal) {
     const params = listParams(0);
     params.set('limit','80');
-    const rows = [];
-    let total = Infinity;
-    while (rows.length < total) {
-        params.set('offset',String(rows.length));
-        const page = await api('/analytics/sessions?'+params,signal);
-        if(excludeLocal && page.localExcluded !== true) throw localScopeUnavailable();
-        const batch = page.sessions || [];
-        total = Number(page.total) || 0;
-        if (!batch.length) break;
-        rows.push(...batch);
+    const scoped = excludeLocal;
+    const fetchPage = async offset => {
+        const query=new URLSearchParams(params);
+        query.set('offset',String(offset));
+        const page=await api('/analytics/sessions?'+query,signal);
+        if(scoped && page.localExcluded!==true)throw localScopeUnavailable();
+        return page;
+    };
+    const first=await fetchPage(0);
+    const rows=[...(first.sessions||[])], total=Number(first.total)||0;
+    const size=Number(first.limit)||80;
+    // Three concurrent pages bound server load and avoid serial network delays.
+    for(let offset=size;offset<total;offset+=size*3) {
+        const offsets=[offset,offset+size,offset+size*2].filter(n=>n<total);
+        const pages=await Promise.all(offsets.map(fetchPage));
+        pages.forEach(page=>rows.push(...(page.sessions||[])));
     }
     return {sessions:[...new Map(rows.map(row=>[row.id,row])).values()],total};
 }
+
 async function loadBoard() {
     boardController?.abort();
     const controller = boardController = new AbortController();
-    const timeout = setTimeout(()=>controller.abort(),20000);
+    const timeout = setTimeout(()=>controller.abort(),60000);
     window.AnalyticsSelect?.close();
     document.querySelectorAll('.view').forEach(view=>{view.inert=true;});
     $('errorBanner').hidden=true; $('refreshBtn').disabled=true;$('excludeLocal').disabled=true; $('deviceFilter').disabled=true;window.AnalyticsSelect?.sync();
