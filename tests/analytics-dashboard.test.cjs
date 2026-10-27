@@ -66,9 +66,9 @@ function dashboard(href = 'http://localhost/analytics.html') {
 test('traffic drill-down uses the same buckets as the analytics service',()=>{
     const app=dashboard();
     for(const [referrer,path,label] of [
-        ['https://x.com/profile','https://folio.example','Twitter'],
-        ['https://t.co/abc','https://folio.example','Twitter'],
-        ['','https://folio.example/?utm_source=Twitter-newsletter','Twitter'],
+        ['https://x.com/profile','https://folio.example','X'],
+        ['https://t.co/abc','https://folio.example','X'],
+        ['','https://folio.example/?utm_source=Twitter-newsletter','X'],
         ['https://google.com','https://folio.example/?src=LinkedIn-profile','LinkedIn'],
         ['','https://folio.example/?utm_source=NEWSLETTER','newsletter'],
         ['','https://folio.example/','Direct / unknown'],
@@ -243,4 +243,15 @@ test('local visits are excluded by default and an explicit opt-out survives relo
     app.run('excludeLocal=false;writeRoute();readRoute()');
     assert.equal(app.run('excludeLocal'),false);
     assert.equal(app.location.searchParams.get('excludeLocal'),'0');
+});
+
+test('social attribution normalizes known domains without guessing from unrelated hostnames',()=>{
+    const app=dashboard();
+    for(const [host,label] of [['l.instagram.com','Instagram'],['m.facebook.com','Facebook'],['web.whatsapp.com','WhatsApp'],['t.co','X'],['www.linkedin.com','LinkedIn'],['mail.google.com','Email'],['youtu.be','YouTube'],['www.reddit.com','Reddit'],['t.me','Telegram'],['www.tiktok.com','TikTok'],['threads.net','Threads'],['pin.it','Pinterest']]) {
+        assert.equal(app.run(`sourceLabel('https://${host}/','https://folio.example/')`),label);
+        assert.notEqual(app.run(`channelKind('${label}')`),'website');
+    }
+    assert.equal(app.run("sourceLabel('https://instagram.com.example.org/','https://folio.example/')"),'instagram.com.example.org');
+    assert.equal(app.run("sourceLabel('','https://folio.example/')"),'Direct / unknown');
+    assert.equal(app.run("JSON.stringify(groupedSources([{label:'l.instagram.com',n:2},{label:'instagram.com',n:3}]))"),'[{"label":"Instagram","n":5}]');
 });

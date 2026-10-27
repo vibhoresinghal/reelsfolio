@@ -102,10 +102,48 @@ const BRAND_MARKS = {
     figma: '<path fill="#f58e74" d="M8.5 2H12v7H8.5a3.5 3.5 0 0 1 0-7"/><path fill="#f4b1a0" d="M12 2h3.5a3.5 3.5 0 0 1 0 7H12"/><path fill="#c4a0ed" d="M8.5 9H12v7H8.5a3.5 3.5 0 0 1 0-7"/><circle cx="15.5" cy="12.5" r="3.5" fill="#83c6e1"/><path fill="#8acaa7" d="M8.5 16H12v3.5A3.5 3.5 0 1 1 8.5 16"/>',
     x: '<path fill="currentColor" d="M18.9 2H22l-6.8 7.8L23.2 22h-6.3L12 14.6 5.5 22H2.3l8.2-9.4L.8 2h6.4l5.5 7.3L18.9 2Zm-1.1 18h1.7L6.3 3.9H4.5Z"/>'
 };
+const SOCIAL_SOURCES = [
+    ['LinkedIn','linkedin',['linkedin.com','lnkd.in']],
+    ['X','x',['x.com','twitter.com','t.co']],
+    ['Instagram','instagram',['instagram.com']],
+    ['Facebook','facebook',['facebook.com','fb.com','fb.me']],
+    ['WhatsApp','whatsapp',['whatsapp.com','wa.me']],
+    ['YouTube','youtube',['youtube.com','youtu.be']],
+    ['Reddit','reddit',['reddit.com','redd.it']],
+    ['Telegram','telegram',['telegram.org','t.me']],
+    ['TikTok','tiktok',['tiktok.com']],
+    ['Threads','threads',['threads.net','threads.com']],
+    ['Pinterest','pinterest',['pinterest.com','pin.it']],
+    ['Email','mail',['mail.google.com','outlook.live.com','outlook.office.com','outlook.office365.com','mail.yahoo.com']],
+    ['Figma Community','figma',['figma.com']]
+];
+function socialSource(value) {
+    const raw=String(value||'').trim().toLowerCase();
+    let host=raw;
+    try { host=new URL(raw.includes('://')?raw:'https://'+raw).hostname.toLowerCase().replace(/\.$/,''); } catch { return null; }
+    return SOCIAL_SOURCES.find(([name,key,domains])=>raw===name.toLowerCase() || raw===key || (key==='x'&&raw==='twitter') || domains.some(domain=>host===domain||host.endsWith('.'+domain))) || null;
+}
+function groupedSources(rows) {
+    const totals=new Map();
+    for(const row of rows) {const label=trafficLabel(row.label);totals.set(label,(totals.get(label)||0)+(Number(row.n)||0));}
+    return [...totals].map(([label,n])=>({label,n})).sort((a,b)=>b.n-a.n);
+}
+Object.assign(BRAND_MARKS,{
+    instagram:'<g fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/></g><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>',
+    facebook:'<path fill="currentColor" d="M14 22v-9h3l.5-4H14V7c0-1 .3-2 2-2h2V1h-3c-4 0-5 2.5-5 6v2H7v4h3v9z"/>',
+    whatsapp:'<g fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 17a9 9 0 1 1 4 3L2 22z"/><path d="M8 7c-3 3 3 9 6 9l2-2-3-2-1 1-2-2 1-1z"/></g>',
+    youtube:'<rect x="2" y="5" width="20" height="14" rx="4" fill="currentColor"/><path d="m10 9 6 3-6 3z" fill="#17191a"/>',
+    telegram:'<path fill="currentColor" d="m2 10 19-7-4 19-6-5-3 3 1-6 9-8-11 7z"/>',
+    reddit:'<g fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="12" cy="15" rx="9" ry="6"/><path d="m12 9 2-6 5 1M8 17q4 3 8 0"/><circle cx="20" cy="4" r="2"/></g><circle cx="8" cy="13" r="1.5" fill="currentColor"/><circle cx="16" cy="13" r="1.5" fill="currentColor"/>',
+    tiktok:'<path fill="currentColor" d="M14 2h4c0 3 2 5 5 5v4a10 10 0 0 1-5-2v7a7 7 0 1 1-7-7v4a3 3 0 1 0 3 3z"/>',
+    threads:'<g fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 7C18-1 3 0 3 12s17 13 18 3c1-7-14-8-14-1 0 6 13 3 9-6-1-3-6-3-8-1"/></g>',
+    pinterest:'<path fill="none" stroke="currentColor" stroke-width="2.5" d="m9 22 4-16M11 15c12 7 14-17 0-13C-1 5 4 15 6 15"/>'
+});
 function channelKind(label) {
     const value = String(label || '').trim().toLowerCase();
     if (value === 'source not shared' || /^(direct(?:\s*\/\s*unknown)?|unknown(?: source)?|)$/.test(value)) return 'unknown';
-    if (/linkedin/.test(value)) return 'linkedin';
+    const social=socialSource(value);
+    if(social)return social[1];
     if (/figma/.test(value)) return 'figma';
     if (['x','twitter','x.com','t.co','twitter.com'].includes(value)) return 'x';
     if (['email','mail','mailto'].includes(value)) return 'mail';
@@ -134,7 +172,7 @@ function watchLabel(value) {
 const milliseconds = value => present(value) ? `${(Number(value) / 1000).toFixed(2)}s` : '\u2014';
 const stamp = value => value ? new Date(value).toLocaleString('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit', hour12:true}) : 'Time unavailable';
 const SOURCE_HELP = 'No referring site was shared. This can happen with a typed address, bookmark, private message, or browser privacy settings.';
-const trafficLabel = label => /^(source not shared|direct(?:\s*\/\s*unknown)?|unknown(?: source)?|)$/i.test(String(label || '').trim()) ? 'Direct / unknown' : String(label);
+const trafficLabel = label => /^(source not shared|direct(?:\s*\/\s*unknown)?|unknown(?: source)?|)$/i.test(String(label || '').trim()) ? 'Direct / unknown' : (socialSource(label)?.[0] || String(label));
 const dateKey = date => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 const shortDate = date => date.toLocaleDateString(undefined, {month:'short', day:'numeric'});
 function sourceLabel(referrer, path) {
@@ -142,11 +180,11 @@ function sourceLabel(referrer, path) {
     let campaign = '';
     try { const params = new URL(path || location.href, location.href).searchParams; campaign = (params.get('utm_source') || params.get('src') || params.get('from') || '').toLowerCase(); } catch (_) {}
     if (campaign.includes('linkedin')) return 'LinkedIn';
-    if (campaign.includes('twitter') || campaign === 'x') return 'Twitter';
-    if (campaign) return campaign;
+    if (campaign.includes('twitter') || campaign === 'x') return 'X';
+    if (campaign) return socialSource(campaign)?.[0] || campaign;
     const host = hostOf(referrer);
-    if (host.includes('linkedin')) return 'LinkedIn';
-    if (host.includes('twitter') || ['x.com','t.co'].includes(host)) return 'Twitter';
+    const social=socialSource(host);
+    if (social) return social[0];
     if (['localhost','127.0.0.1'].includes(host)) return 'Local';
     if (host) return host;
     return ['localhost','127.0.0.1'].includes(hostOf(path)) ? 'Local' : 'Direct / unknown';
@@ -216,7 +254,7 @@ function renderOverview() {
         return {label:({resume:'Resume',linkedin:'LinkedIn',email:'Email',x:'X'})[key], n:item?.n ?? null};
     }).concat([...outbound.values()]).filter(r=>present(r.n));
     $('outbound').innerHTML = outboundRows.length ? `<div class="outbound-grid">${outboundRows.map(r=>`<div class="outbound-item"><span class="channel-name">${channelIcon(r.label)}<span>${esc(r.label)}</span></span><span class="outbound-count"><b class="numeric">${metricNumber(r.n)}</b><span>${Number(r.n)===1?'click':'clicks'}</span></span></div>`).join('')}</div>` : '<p class="empty">No link clicks reported.</p>';
-    const sources = o.sources || [], sourceTotal = sources.reduce((sum,r)=>sum+(Number(r.n)||0),0);
+    const sources = groupedSources(o.sources || []), sourceTotal = sources.reduce((sum,r)=>sum+(Number(r.n)||0),0);
     $('sources').innerHTML = sources.length ? sources.map(r=>`<button class="bar-row" data-source="${esc(trafficLabel(r.label))}" aria-label="View visitors from ${esc(trafficLabel(r.label))}"><span class="source-row-icon">${channelIcon(trafficLabel(r.label))}</span><span class="source-row-body"><span class="bar-label"><span>${esc(trafficLabel(r.label))}</span><span class="source-numbers"><strong class="numeric">${number(r.n)}</strong> ${Number(r.n)===1?'visit':'visits'}<span class="source-percentage">${sourceTotal ? Math.round(r.n/sourceTotal*100) : 0}%</span></span></span><span class="bar-track"><span class="bar-fill" style="--share:${sourceTotal ? Math.max(0,Math.min(100,r.n/sourceTotal*100)) : 0}%"></span></span></span><span class="source-drill">${icon('chevron-right')}</span></button>`).join('') : '<p class="empty">Arrival sources will appear after your first visits.</p>';
     const best = projectsData().filter(p=>p.id!=='landing' && p.seconds>0).sort((a,b)=>b.seconds-a.seconds)[0];
     const topSource = sources.filter(r => trafficLabel(r.label) !== 'Direct / unknown').sort((a,b)=>b.n-a.n)[0];
